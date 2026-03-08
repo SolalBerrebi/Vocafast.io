@@ -29,13 +29,14 @@ export interface Deck {
   updated_at: string;
 }
 
-export type WordSourceType = "manual" | "photo" | "audio" | "conversation";
+export type WordSourceType = "manual" | "photo" | "audio" | "conversation" | "text" | "topic";
 
 export interface Word {
   id: string;
   deck_id: string;
   word: string;
   translation: string;
+  context_sentence: string | null;
   source_type: WordSourceType;
   ease_factor: number;
   interval_days: number;

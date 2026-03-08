@@ -7,9 +7,12 @@ import {
   NavbarBackLink,
   Block,
   List,
+  ListInput,
   Button,
   Preloader,
   Searchbar,
+  Sheet,
+  BlockTitle,
 } from "konsta/react";
 import { createClient } from "@/lib/supabase/client";
 import type { Deck, Word } from "@/types/database";
@@ -23,6 +26,13 @@ export default function DeckDetailPage() {
   const [words, setWords] = useState<Word[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // Edit sheet state
+  const [editWord, setEditWord] = useState<Word | null>(null);
+  const [editWordValue, setEditWordValue] = useState("");
+  const [editTranslationValue, setEditTranslationValue] = useState("");
+  const [editContextValue, setEditContextValue] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     const [deckRes, wordsRes] = await Promise.all([
@@ -45,6 +55,37 @@ export default function DeckDetailPage() {
   const handleDelete = async (wordId: string) => {
     await supabase.from("words").delete().eq("id", wordId);
     setWords((w) => w.filter((word) => word.id !== wordId));
+    setEditWord(null);
+  };
+
+  const openEdit = (word: Word) => {
+    setEditWord(word);
+    setEditWordValue(word.word);
+    setEditTranslationValue(word.translation);
+    setEditContextValue(word.context_sentence ?? "");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editWord || !editWordValue.trim() || !editTranslationValue.trim()) return;
+    setSaving(true);
+    const { data } = await supabase
+      .from("words")
+      .update({
+        word: editWordValue.trim(),
+        translation: editTranslationValue.trim(),
+        context_sentence: editContextValue.trim() || null,
+      })
+      .eq("id", editWord.id)
+      .select()
+      .single();
+
+    if (data) {
+      setWords((prev) =>
+        prev.map((w) => (w.id === editWord.id ? (data as Word) : w)),
+      );
+    }
+    setSaving(false);
+    setEditWord(null);
   };
 
   const filtered = words.filter(
@@ -131,11 +172,63 @@ export default function DeckDetailPage() {
             <WordRow
               key={word.id}
               word={word}
+              onClick={() => openEdit(word)}
               onDelete={() => handleDelete(word.id)}
             />
           ))}
         </List>
       )}
+
+      {/* Edit Word Sheet */}
+      <Sheet
+        opened={!!editWord}
+        onBackdropClick={() => setEditWord(null)}
+        className="pb-safe"
+      >
+        <BlockTitle>Edit Word</BlockTitle>
+        <List strongIos insetIos>
+          <ListInput
+            type="text"
+            label="Word"
+            value={editWordValue}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setEditWordValue(e.target.value)
+            }
+          />
+          <ListInput
+            type="text"
+            label="Translation"
+            value={editTranslationValue}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setEditTranslationValue(e.target.value)
+            }
+          />
+          <ListInput
+            type="text"
+            label="Context sentence (optional)"
+            value={editContextValue}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setEditContextValue(e.target.value)
+            }
+          />
+        </List>
+        <Block className="flex gap-2">
+          <Button
+            className="flex-1"
+            onClick={handleSaveEdit}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
+          <Button
+            className="flex-1"
+            outline
+            onClick={() => editWord && handleDelete(editWord.id)}
+          >
+            <span className="text-red-500">Delete</span>
+          </Button>
+        </Block>
+      </Sheet>
     </>
   );
 }

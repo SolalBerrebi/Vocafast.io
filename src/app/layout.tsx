@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { App } from "konsta/react";
 import "./globals.css";
 
@@ -8,6 +9,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  }, []);
+
   return (
     <html lang="en">
       <head>
