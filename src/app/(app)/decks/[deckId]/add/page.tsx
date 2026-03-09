@@ -160,16 +160,22 @@ export default function AddWordsPage() {
         }),
       });
 
-      if (!res.ok) {
-        const errorText = await res.text().catch(() => "Unknown error");
-        console.error("API error:", res.status, errorText);
-        setPhotoError(`Server error (${res.status}). Try a smaller or clearer image.`);
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        setPhotoError(`Server error (${res.status}). Please try again.`);
         setPhotoProgress("");
         setPhotoProcessing(false);
         return;
       }
 
-      const data = await res.json();
+      if (!res.ok) {
+        setPhotoError(data.error || `Server error (${res.status})`);
+        setPhotoProgress("");
+        setPhotoProcessing(false);
+        return;
+      }
 
       if (data.error) {
         setPhotoError(data.error);

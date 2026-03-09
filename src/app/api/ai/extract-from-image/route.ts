@@ -93,17 +93,36 @@ If you cannot find any words, return an empty array: []`;
     );
 
     if (!res.ok) {
-      const error = await res.text();
-      console.error("Gemini API error:", error);
+      const errorBody = await res.text();
+      console.error("Gemini API error:", res.status, errorBody);
+      // Surface the actual error so we can diagnose
+      let detail = "Unknown Gemini error";
+      try {
+        const parsed = JSON.parse(errorBody);
+        detail = parsed.error?.message || errorBody.slice(0, 200);
+      } catch {
+        detail = errorBody.slice(0, 200);
+      }
       return NextResponse.json(
-        { error: "Failed to process image with Gemini" },
-        { status: 500 },
+        { error: `Gemini API error: ${detail}` },
+        { status: 502 },
       );
     }
 
     const data = await res.json();
+
+    // Check for blocked/empty responses
+    if (!data.candidates || data.candidates.length === 0) {
+      const reason = data.promptFeedback?.blockReason || "No response from Gemini";
+      console.error("Gemini empty response:", JSON.stringify(data));
+      return NextResponse.json(
+        { error: `Gemini returned no results: ${reason}` },
+        { status: 422 },
+      );
+    }
+
     const text =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      data.candidates[0]?.content?.parts?.[0]?.text ?? "";
 
     // Parse JSON from Gemini response (strip code fences if present)
     const jsonStr = text
