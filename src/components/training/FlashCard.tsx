@@ -5,13 +5,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Word } from "@/types/database";
 
 export type AnswerQuality = "again" | "hard" | "good";
+export type CardFrontSide = "word" | "translation";
 
 interface FlashCardProps {
   word: Word;
+  frontSide?: CardFrontSide;
   onAnswer: (quality: AnswerQuality) => void;
 }
 
-export default function FlashCard({ word, onAnswer }: FlashCardProps) {
+export default function FlashCard({ word, frontSide = "word", onAnswer }: FlashCardProps) {
+  const frontText = frontSide === "word" ? word.word : word.translation;
+  const backText = frontSide === "word" ? word.translation : word.word;
+  const frontLabel = frontSide === "word" ? "Translate this word" : "What is this word?";
+  const backLabel = frontSide === "word" ? "Translation" : "Word";
   const [isFlipped, setIsFlipped] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
@@ -57,9 +63,9 @@ export default function FlashCard({ word, onAnswer }: FlashCardProps) {
                 className="absolute inset-0 bg-white rounded-3xl flex flex-col items-center justify-center p-6 border border-gray-100"
                 style={{ backfaceVisibility: "hidden" }}
               >
-                <p className="text-[13px] text-gray-400 mb-3 font-medium">Translate this word</p>
-                <p className="text-3xl font-bold text-center tracking-tight">{word.word}</p>
-                {word.context_sentence && (
+                <p className="text-[13px] text-gray-400 mb-3 font-medium">{frontLabel}</p>
+                <p className="text-3xl font-bold text-center tracking-tight">{frontText}</p>
+                {frontSide === "word" && word.context_sentence && (
                   <p className="text-[13px] text-gray-400 mt-4 text-center italic leading-relaxed">
                     {word.context_sentence}
                   </p>
@@ -75,9 +81,9 @@ export default function FlashCard({ word, onAnswer }: FlashCardProps) {
                   transform: "rotateY(180deg)",
                 }}
               >
-                <p className="text-[13px] text-blue-400 mb-3 font-medium">Translation</p>
+                <p className="text-[13px] text-blue-400 mb-3 font-medium">{backLabel}</p>
                 <p className="text-3xl font-bold text-center text-blue-600 tracking-tight">
-                  {word.translation}
+                  {backText}
                 </p>
               </div>
             </motion.div>

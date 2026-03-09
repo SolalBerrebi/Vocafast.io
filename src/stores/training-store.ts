@@ -2,9 +2,12 @@ import { create } from "zustand";
 import type { TrainingMode } from "@/types/database";
 import type { TrainingCard } from "@/types/training";
 
+export type CardFrontSide = "word" | "translation";
+
 interface TrainingStoreState {
   sessionId: string | null;
   mode: TrainingMode;
+  frontSide: CardFrontSide;
   cards: TrainingCard[];
   currentIndex: number;
   correct: number;
@@ -17,6 +20,7 @@ interface TrainingStoreState {
     sessionId: string;
     mode: TrainingMode;
     cards: TrainingCard[];
+    frontSide?: CardFrontSide;
   }) => void;
   answerCorrect: () => void;
   answerHard: () => void;
@@ -29,6 +33,7 @@ interface TrainingStoreState {
 export const useTrainingStore = create<TrainingStoreState>()((set) => ({
   sessionId: null,
   mode: "flashcard",
+  frontSide: "word",
   cards: [],
   currentIndex: 0,
   correct: 0,
@@ -37,10 +42,11 @@ export const useTrainingStore = create<TrainingStoreState>()((set) => ({
   startedAt: null,
   isFinished: false,
 
-  startSession: ({ sessionId, mode, cards }) =>
+  startSession: ({ sessionId, mode, cards, frontSide }) =>
     set({
       sessionId,
       mode,
+      frontSide: frontSide ?? "word",
       cards,
       currentIndex: 0,
       correct: 0,
@@ -66,6 +72,7 @@ export const useTrainingStore = create<TrainingStoreState>()((set) => ({
   resetSession: () =>
     set({
       sessionId: null,
+      frontSide: "word",
       cards: [],
       currentIndex: 0,
       correct: 0,

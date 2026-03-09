@@ -25,6 +25,7 @@ export default function TrainingSessionPage() {
   const {
     sessionId,
     mode,
+    frontSide,
     cards,
     currentIndex,
     correct,
@@ -189,6 +190,7 @@ export default function TrainingSessionPage() {
           <FlashCard
             key={currentCard.word.id}
             word={currentCard.word}
+            frontSide={frontSide}
             onAnswer={handleFlashcardAnswer}
           />
         )}

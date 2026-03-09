@@ -8,6 +8,7 @@ import { useEnvironmentStore } from "@/stores/environment-store";
 import { useTrainingStore } from "@/stores/training-store";
 import { buildTrainingQueue, getDeckStats } from "@/lib/srs/scheduler";
 import type { StudyScope } from "@/lib/srs/scheduler";
+import type { CardFrontSide } from "@/stores/training-store";
 import type { Deck, TrainingMode, Word } from "@/types/database";
 
 const SESSION_SIZES = [5, 10, 15, 20];
@@ -36,6 +37,7 @@ export default function TrainLauncherPage() {
   const [stats, setStats] = useState({ total: 0, due: 0, newCount: 0, learning: 0, mastered: 0 });
   const [mode, setMode] = useState<TrainingMode>("flashcard");
   const [scope, setScope] = useState<StudyScope>("smart");
+  const [frontSide, setFrontSide] = useState<CardFrontSide>("word");
   const [sessionSize, setSessionSize] = useState(20);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -102,7 +104,7 @@ export default function TrainLauncherPage() {
       return { word };
     });
 
-    startSession({ sessionId: session.id, mode, cards });
+    startSession({ sessionId: session.id, mode, cards, frontSide });
     router.push(`/train/${session.id}`);
   };
 
@@ -209,6 +211,35 @@ export default function TrainLauncherPage() {
           </button>
         ))}
       </div>
+
+      {/* Card front side — only for flashcards */}
+      {mode === "flashcard" && (
+        <>
+          <h2 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 px-1">Show first</h2>
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setFrontSide("word")}
+              className={`flex-1 py-2.5 rounded-xl text-[14px] font-semibold ${
+                frontSide === "word"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-600 active:bg-gray-200"
+              }`}
+            >
+              Word
+            </button>
+            <button
+              onClick={() => setFrontSide("translation")}
+              className={`flex-1 py-2.5 rounded-xl text-[14px] font-semibold ${
+                frontSide === "translation"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-600 active:bg-gray-200"
+              }`}
+            >
+              Translation
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Session size */}
       <h2 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 px-1">Session size</h2>
