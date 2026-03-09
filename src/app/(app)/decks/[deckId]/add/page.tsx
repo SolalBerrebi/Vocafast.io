@@ -99,83 +99,46 @@ export default function AddWordsPage() {
     setLoading(false);
   };
 
-  // CAPT-04 to CAPT-07: Photo capture & OCR
+  // CAPT-04 to CAPT-07: Photo capture & Gemini Vision extraction
   const handlePhotoSelected = async (file: File) => {
     if (!activeEnvironment) return;
 
-    // Show preview
-    const reader = new FileReader();
-    reader.onload = (e) => setPhotoPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
-
     setPhotoProcessing(true);
-    setPhotoProgress("Loading OCR engine...");
+    setPhotoProgress("Preparing image...");
     setPhotoWords([]);
 
     try {
-      // Dynamically import Tesseract.js (heavy library, load on demand)
-      const Tesseract = await import("tesseract.js");
-
-      // Determine OCR language based on target language
-      const langMap: Record<string, string> = {
-        he: "heb",
-        ar: "ara",
-        en: "eng",
-        fr: "fra",
-        es: "spa",
-        de: "deu",
-        it: "ita",
-        pt: "por",
-        ja: "jpn",
-        ko: "kor",
-        zh: "chi_sim",
-        ru: "rus",
-        hi: "hin",
-        nl: "nld",
-        sv: "swe",
-        pl: "pol",
-        tr: "tur",
-      };
-
-      const ocrLang = langMap[activeEnvironment.target_lang] || "eng";
-      // Use both target and native language for better recognition of bilingual tables
-      const nativeOcrLang = langMap[nativeLang] || "eng";
-      const ocrLangs = ocrLang === nativeOcrLang ? ocrLang : `${ocrLang}+${nativeOcrLang}`;
-
-      setPhotoProgress("Recognizing text...");
-
-      const result = await Tesseract.recognize(file, ocrLangs, {
-        logger: (m) => {
-          if (m.status === "recognizing text") {
-            const pct = Math.round((m.progress ?? 0) * 100);
-            setPhotoProgress(`Recognizing text... ${pct}%`);
-          }
-        },
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          setPhotoPreview(result);
+          // Strip the data:image/...;base64, prefix
+          const base64Data = result.split(",")[1];
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
 
-      const ocrText = result.data.text;
+      setPhotoProgress("Analyzing image with AI...");
 
-      if (!ocrText.trim()) {
-        setPhotoProgress("No text found in image. Try a clearer photo.");
-        setPhotoProcessing(false);
-        return;
-      }
-
-      setPhotoProgress("Extracting word pairs...");
-
-      // Send OCR text to API for parsing and translation
       const res = await fetch("/api/ai/extract-from-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ocrText,
+          imageBase64: base64,
+          mimeType: file.type || "image/jpeg",
           targetLang: activeEnvironment.target_lang,
           nativeLang,
         }),
       });
       const data = await res.json();
 
-      if (data.words && data.words.length > 0) {
+      if (data.error) {
+        setPhotoProgress(data.error);
+      } else if (data.words && data.words.length > 0) {
         setPhotoWords(
           data.words.map((w: { word: string; translation: string }) => ({
             ...w,
@@ -187,8 +150,8 @@ export default function AddWordsPage() {
         setPhotoProgress("No word pairs found. Try a photo with a vocabulary table.");
       }
     } catch (err) {
-      console.error("Photo OCR failed:", err);
-      setPhotoProgress("OCR failed. Please try again with a clearer image.");
+      console.error("Photo extraction failed:", err);
+      setPhotoProgress("Failed to process image. Please try again.");
     }
     setPhotoProcessing(false);
   };

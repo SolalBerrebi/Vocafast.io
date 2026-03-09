@@ -1,107 +1,139 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// This route receives OCR text extracted client-side by Tesseract.js
-// and translates the extracted word-translation pairs using LibreTranslate.
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_MODEL = "gemini-2.0-flash";
 
-const LIBRETRANSLATE_URL =
-  process.env.LIBRETRANSLATE_URL || "https://libretranslate.com";
-const LIBRETRANSLATE_API_KEY = process.env.LIBRETRANSLATE_API_KEY || "";
+const LANG_NAMES: Record<string, string> = {
+  en: "English",
+  he: "Hebrew",
+  fr: "French",
+  es: "Spanish",
+  ar: "Arabic",
+  de: "German",
+  it: "Italian",
+  pt: "Portuguese",
+  ja: "Japanese",
+  ko: "Korean",
+  zh: "Chinese",
+  ru: "Russian",
+  hi: "Hindi",
+  nl: "Dutch",
+  sv: "Swedish",
+  pl: "Polish",
+  tr: "Turkish",
+};
 
-async function translate(
-  text: string,
-  source: string,
-  target: string,
-): Promise<string> {
-  const body: Record<string, string> = { q: text, source, target };
-  if (LIBRETRANSLATE_API_KEY) body.api_key = LIBRETRANSLATE_API_KEY;
-
-  const res = await fetch(`${LIBRETRANSLATE_URL}/translate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const error = await res.text();
-    throw new Error(`LibreTranslate error: ${error}`);
-  }
-
-  const data = await res.json();
-  return data.translatedText;
-}
-
-interface ParsedPair {
-  word: string;
-  translation: string;
-}
-
-function parseOCRText(text: string): ParsedPair[] {
-  const lines = text.split("\n").filter((l) => l.trim().length > 0);
-  const pairs: ParsedPair[] = [];
-
-  for (const line of lines) {
-    // Try common table/list separators: tab, |, -, :, =, multiple spaces
-    const separators = ["\t", " | ", " - ", " : ", " = ", "  "];
-    let found = false;
-
-    for (const sep of separators) {
-      if (line.includes(sep)) {
-        const parts = line.split(sep).map((p) => p.trim()).filter(Boolean);
-        if (parts.length >= 2) {
-          pairs.push({ word: parts[0], translation: parts[1] });
-          found = true;
-          break;
-        }
-      }
-    }
-
-    // If no separator found, treat as a standalone word (will need translation)
-    if (!found && line.trim().length > 0 && line.trim().length < 100) {
-      pairs.push({ word: line.trim(), translation: "" });
-    }
-  }
-
-  return pairs;
+function getLangName(code: string) {
+  return LANG_NAMES[code] ?? code;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { ocrText, targetLang, nativeLang } = await request.json();
-
-    if (!ocrText || !targetLang || !nativeLang) {
+    if (!GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: "Missing ocrText, targetLang, or nativeLang" },
+        { error: "GEMINI_API_KEY is not configured" },
+        { status: 500 },
+      );
+    }
+
+    const { imageBase64, mimeType, targetLang, nativeLang } =
+      await request.json();
+
+    if (!imageBase64 || !targetLang || !nativeLang) {
+      return NextResponse.json(
+        { error: "Missing imageBase64, targetLang, or nativeLang" },
         { status: 400 },
       );
     }
 
-    const parsed = parseOCRText(ocrText);
+    const targetName = getLangName(targetLang);
+    const nativeName = getLangName(nativeLang);
 
-    // Translate words that don't have translations yet
-    const words = await Promise.all(
-      parsed.map(async (pair) => {
-        if (pair.translation) {
-          return pair;
-        }
-        try {
-          const translation = await translate(pair.word, targetLang, nativeLang);
-          return { word: pair.word, translation };
-        } catch {
-          return { word: pair.word, translation: "?" };
-        }
-      }),
+    const prompt = `You are a vocabulary extraction assistant. Analyze this image which contains a vocabulary table, word list, or text with words and their translations.
+
+Extract all word-translation pairs you can find. The words should be in ${targetName} and translations in ${nativeName}.
+
+If the image contains a table with columns, extract each row as a pair.
+If the image contains a list of words without translations, provide the ${nativeName} translation for each word.
+If the image contains text/paragraph, extract the key vocabulary words and translate them.
+
+Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields.
+Example: [{"word":"שלום","translation":"hello"},{"word":"תודה","translation":"thank you"}]
+
+If you cannot find any words, return an empty array: []`;
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                {
+                  inline_data: {
+                    mime_type: mimeType || "image/jpeg",
+                    data: imageBase64,
+                  },
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 4096,
+          },
+        }),
+      },
     );
 
-    // Filter out garbage entries
+    if (!res.ok) {
+      const error = await res.text();
+      console.error("Gemini API error:", error);
+      return NextResponse.json(
+        { error: "Failed to process image with Gemini" },
+        { status: 500 },
+      );
+    }
+
+    const data = await res.json();
+    const text =
+      data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+    // Parse JSON from Gemini response (strip code fences if present)
+    const jsonStr = text
+      .replace(/```json\s*/g, "")
+      .replace(/```\s*/g, "")
+      .trim();
+
+    let words: { word: string; translation: string }[] = [];
+    try {
+      words = JSON.parse(jsonStr);
+    } catch {
+      console.error("Failed to parse Gemini response:", text);
+      return NextResponse.json(
+        { error: "Could not parse vocabulary from image" },
+        { status: 422 },
+      );
+    }
+
+    // Filter valid entries
     const filtered = words.filter(
-      (w) => w.word.length > 0 && w.word.length < 80,
+      (w) =>
+        w.word &&
+        w.translation &&
+        w.word.length > 0 &&
+        w.word.length < 100 &&
+        w.translation.length > 0,
     );
 
     return NextResponse.json({ words: filtered });
   } catch (error) {
     console.error("Image extraction error:", error);
     return NextResponse.json(
-      { error: "Failed to process image text" },
+      { error: "Failed to process image" },
       { status: 500 },
     );
   }
