@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Allow larger request body for image uploads and longer execution for Gemini API
 export const maxDuration = 30;
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash-lite";
+const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+const GROQ_MODEL = process.env.GROQ_MODEL || "llama-4-scout-17b-16e-instruct";
 
 const LANG_NAMES: Record<string, string> = {
   en: "English",
@@ -32,9 +31,9 @@ function getLangName(code: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!GEMINI_API_KEY) {
+    if (!GROQ_API_KEY) {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured" },
+        { error: "GROQ_API_KEY is not configured. Get a free key at console.groq.com" },
         { status: 500 },
       );
     }
@@ -65,66 +64,60 @@ Example: [{"word":"שלום","translation":"hello"},{"word":"תודה","translat
 
 If you cannot find any words, return an empty array: []`;
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inline_data: {
-                    mime_type: mimeType || "image/jpeg",
-                    data: imageBase64,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 4096,
-          },
-        }),
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${GROQ_API_KEY}`,
       },
-    );
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}`,
+                },
+              },
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 4096,
+      }),
+    });
 
     if (!res.ok) {
       const errorBody = await res.text();
-      console.error("Gemini API error:", res.status, errorBody);
-      // Surface the actual error so we can diagnose
-      let detail = "Unknown Gemini error";
+      console.error("Groq API error:", res.status, errorBody);
+      let detail = "Unknown error";
       try {
         const parsed = JSON.parse(errorBody);
-        detail = parsed.error?.message || errorBody.slice(0, 200);
+        detail = parsed.error?.message || errorBody.slice(0, 300);
       } catch {
-        detail = errorBody.slice(0, 200);
+        detail = errorBody.slice(0, 300);
       }
       return NextResponse.json(
-        { error: `Gemini API error: ${detail}` },
+        { error: `Groq API error: ${detail}` },
         { status: 502 },
       );
     }
 
     const data = await res.json();
+    const text = data.choices?.[0]?.message?.content ?? "";
 
-    // Check for blocked/empty responses
-    if (!data.candidates || data.candidates.length === 0) {
-      const reason = data.promptFeedback?.blockReason || "No response from Gemini";
-      console.error("Gemini empty response:", JSON.stringify(data));
+    if (!text.trim()) {
       return NextResponse.json(
-        { error: `Gemini returned no results: ${reason}` },
+        { error: "No response from Groq. Try a clearer image." },
         { status: 422 },
       );
     }
 
-    const text =
-      data.candidates[0]?.content?.parts?.[0]?.text ?? "";
-
-    // Parse JSON from Gemini response (strip code fences if present)
+    // Parse JSON from response (strip code fences if present)
     const jsonStr = text
       .replace(/```json\s*/g, "")
       .replace(/```\s*/g, "")
@@ -134,7 +127,7 @@ If you cannot find any words, return an empty array: []`;
     try {
       words = JSON.parse(jsonStr);
     } catch {
-      console.error("Failed to parse Gemini response:", text);
+      console.error("Failed to parse Groq response:", text);
       return NextResponse.json(
         { error: "Could not parse vocabulary from image" },
         { status: 422 },
