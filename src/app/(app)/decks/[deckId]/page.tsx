@@ -193,12 +193,38 @@ export default function DeckDetailPage() {
 
         {/* Word list */}
         {words.length === 0 ? (
-          <div className="text-center mt-10">
-            <div className="text-5xl mb-3">📝</div>
-            <h3 className="font-semibold tracking-tight">No words yet</h3>
-            <p className="text-gray-400 text-[14px] mt-1">
-              Add words to start building your vocabulary
-            </p>
+          <div className="mt-6">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-3">📝</div>
+              <h3 className="text-lg font-bold tracking-tight">Your deck is empty</h3>
+              <p className="text-gray-400 text-[14px] mt-1">
+                Add vocabulary using any of these methods
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
+              {[
+                { icon: "✏️", title: "Manual Entry", desc: "Type words and translations one by one", color: "blue" },
+                { icon: "📷", title: "Photo Scan", desc: "Snap a photo of a textbook or menu — AI reads it", color: "purple" },
+                { icon: "📋", title: "Paste Text", desc: "Paste any text — AI extracts vocabulary for you", color: "green" },
+                { icon: "🤖", title: "AI Topics", desc: "Pick a topic and AI generates words instantly", color: "orange" },
+              ].map((method) => (
+                <button
+                  key={method.title}
+                  onClick={() => router.push(`/decks/${deckId}/add`)}
+                  className="w-full flex items-center gap-3.5 p-4 bg-white rounded-2xl border border-gray-100 text-left active:bg-gray-50 transition-colors"
+                >
+                  <span className="text-2xl">{method.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-[14px] text-gray-800">{method.title}</p>
+                    <p className="text-[12px] text-gray-400 mt-0.5">{method.desc}</p>
+                  </div>
+                  <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <List strongIos insetIos className="-mx-5">

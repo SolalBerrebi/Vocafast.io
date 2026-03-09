@@ -103,13 +103,6 @@ export default function WelcomeTutorialPage() {
         </button>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex gap-2 mt-2 mb-8 px-4">
-        <div className="flex-1 h-1 rounded-full bg-blue-500" />
-        <div className="flex-1 h-1 rounded-full bg-gray-200" />
-        <div className="flex-1 h-1 rounded-full bg-gray-200" />
-      </div>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -202,10 +195,13 @@ export default function WelcomeTutorialPage() {
         {/* CTA */}
         <div className="pb-6">
           <button
-            onClick={() => router.push("/tutorial/create-deck")}
+            onClick={() => {
+              localStorage.setItem("vocafast-tutorial-done", "1");
+              router.push("/decks");
+            }}
             className="w-full py-3.5 rounded-2xl bg-blue-500 text-white font-semibold text-[16px] active:scale-[0.98] transition-transform"
           >
-            Next
+            Get Started
           </button>
         </div>
       </motion.div>

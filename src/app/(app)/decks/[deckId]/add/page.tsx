@@ -15,6 +15,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { TOPICS } from "@/lib/ai/topics";
 import type { WordSourceType } from "@/types/database";
+import CoachMark from "@/components/ui/CoachMark";
 
 interface ExtractedWord {
   word: string;
@@ -371,6 +372,13 @@ export default function AddWordsPage() {
         </button>
 
         <h1 className="text-2xl font-bold tracking-tight mb-4">Add Words</h1>
+
+        <CoachMark id="add-words-tabs" className="mb-4">
+          <p className="font-semibold text-[15px] mb-1">Multiple ways to add words</p>
+          <p className="text-[13px] text-blue-100 leading-relaxed">
+            Type them manually, snap a photo, paste text, or let AI generate words by topic. Switch between methods using the tabs below.
+          </p>
+        </CoachMark>
 
         {/* Tab selector */}
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-1">

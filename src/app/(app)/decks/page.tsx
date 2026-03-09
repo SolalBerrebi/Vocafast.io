@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEnvironmentStore } from "@/stores/environment-store";
 import type { Deck } from "@/types/database";
 import DeckCard from "@/components/deck/DeckCard";
+import CoachMark from "@/components/ui/CoachMark";
 
 export default function DecksPage() {
   const router = useRouter();
@@ -51,15 +52,24 @@ export default function DecksPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2.5">
-          {decks.map((deck) => (
-            <DeckCard
-              key={deck.id}
-              deck={deck}
-              onClick={() => router.push(`/decks/${deck.id}`)}
-            />
-          ))}
-        </div>
+        <>
+          <CoachMark id="decks-tap-deck" className="mb-4">
+            <p className="font-semibold text-[15px] mb-1">Tap your deck to get started!</p>
+            <p className="text-[13px] text-blue-100 leading-relaxed">
+              Open a deck to add vocabulary and start training. Use the + button to create more decks.
+            </p>
+          </CoachMark>
+
+          <div className="space-y-2.5">
+            {decks.map((deck) => (
+              <DeckCard
+                key={deck.id}
+                deck={deck}
+                onClick={() => router.push(`/decks/${deck.id}`)}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* FAB */}
