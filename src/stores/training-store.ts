@@ -8,6 +8,7 @@ interface TrainingStoreState {
   cards: TrainingCard[];
   currentIndex: number;
   correct: number;
+  hard: number;
   incorrect: number;
   startedAt: number | null;
   isFinished: boolean;
@@ -18,6 +19,7 @@ interface TrainingStoreState {
     cards: TrainingCard[];
   }) => void;
   answerCorrect: () => void;
+  answerHard: () => void;
   answerIncorrect: () => void;
   nextCard: () => void;
   finishSession: () => void;
@@ -30,6 +32,7 @@ export const useTrainingStore = create<TrainingStoreState>()((set) => ({
   cards: [],
   currentIndex: 0,
   correct: 0,
+  hard: 0,
   incorrect: 0,
   startedAt: null,
   isFinished: false,
@@ -41,12 +44,14 @@ export const useTrainingStore = create<TrainingStoreState>()((set) => ({
       cards,
       currentIndex: 0,
       correct: 0,
+      hard: 0,
       incorrect: 0,
       startedAt: Date.now(),
       isFinished: false,
     }),
 
   answerCorrect: () => set((s) => ({ correct: s.correct + 1 })),
+  answerHard: () => set((s) => ({ hard: s.hard + 1 })),
   answerIncorrect: () => set((s) => ({ incorrect: s.incorrect + 1 })),
 
   nextCard: () =>
@@ -64,6 +69,7 @@ export const useTrainingStore = create<TrainingStoreState>()((set) => ({
       cards: [],
       currentIndex: 0,
       correct: 0,
+      hard: 0,
       incorrect: 0,
       startedAt: null,
       isFinished: false,

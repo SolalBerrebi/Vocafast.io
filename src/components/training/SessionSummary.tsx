@@ -5,6 +5,7 @@ import { Button, Block } from "konsta/react";
 
 interface SessionSummaryProps {
   correct: number;
+  hard: number;
   incorrect: number;
   duration: number; // ms
   onDone: () => void;
@@ -12,12 +13,13 @@ interface SessionSummaryProps {
 
 export default function SessionSummary({
   correct,
+  hard,
   incorrect,
   duration,
   onDone,
 }: SessionSummaryProps) {
-  const total = correct + incorrect;
-  const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const total = correct + hard + incorrect;
+  const accuracy = total > 0 ? Math.round(((correct + hard) / total) * 100) : 0;
   const minutes = Math.floor(duration / 60000);
   const seconds = Math.floor((duration % 60000) / 1000);
 
@@ -49,7 +51,7 @@ export default function SessionSummary({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="text-2xl font-bold mb-6"
+        className="text-2xl font-bold mb-8"
       >
         {message}
       </motion.h1>
@@ -58,19 +60,23 @@ export default function SessionSummary({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="grid grid-cols-3 gap-6 mb-10"
+        className="grid grid-cols-4 gap-4 mb-10 w-full max-w-sm"
       >
         <div className="text-center">
-          <p className="text-3xl font-bold text-green-500">{correct}</p>
-          <p className="text-sm text-gray-500">Correct</p>
+          <p className="text-2xl font-bold text-green-500">{correct}</p>
+          <p className="text-xs text-gray-500">Good</p>
         </div>
         <div className="text-center">
-          <p className="text-3xl font-bold text-red-500">{incorrect}</p>
-          <p className="text-sm text-gray-500">Incorrect</p>
+          <p className="text-2xl font-bold text-orange-500">{hard}</p>
+          <p className="text-xs text-gray-500">Hard</p>
         </div>
         <div className="text-center">
-          <p className="text-3xl font-bold">{accuracy}%</p>
-          <p className="text-sm text-gray-500">Accuracy</p>
+          <p className="text-2xl font-bold text-red-500">{incorrect}</p>
+          <p className="text-xs text-gray-500">Again</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold">{accuracy}%</p>
+          <p className="text-xs text-gray-500">Score</p>
         </div>
       </motion.div>
 
