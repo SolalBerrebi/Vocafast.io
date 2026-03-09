@@ -46,7 +46,7 @@ export default function FirstDeckPage() {
         .eq("id", user.id);
     }
 
-    router.push("/decks");
+    router.push("/tutorial/welcome");
   };
 
   return (
