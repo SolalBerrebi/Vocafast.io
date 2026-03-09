@@ -54,8 +54,10 @@ export default function AddWordsPage() {
 
   // Topic generation state
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [customTopic, setCustomTopic] = useState("");
   const [generatingTopic, setGeneratingTopic] = useState(false);
   const [topicWords, setTopicWords] = useState<ExtractedWord[]>([]);
+  const [topicError, setTopicError] = useState("");
 
   // Active tab
   const [activeTab, setActiveTab] = useState<"manual" | "photo" | "text" | "topic">("manual");
@@ -282,30 +284,36 @@ export default function AddWordsPage() {
     }
   };
 
-  // CAPT-12/13: Topic generation
-  const handleGenerateTopic = async (topicId: string) => {
+  // Topic generation (predefined or custom)
+  const handleGenerateTopic = async (topicName: string) => {
     if (!activeEnvironment) return;
-    setSelectedTopic(topicId);
+    setSelectedTopic(topicName);
     setGeneratingTopic(true);
+    setTopicError("");
     try {
       const res = await fetch("/api/ai/generate-topic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          topicId,
+          topic: topicName,
           nativeLang,
           targetLang: activeEnvironment.target_lang,
         }),
       });
       const data = await res.json();
-      if (data.words) {
+      if (data.error) {
+        setTopicError(data.error);
+      } else if (data.words && data.words.length > 0) {
         setTopicWords(data.words.map((w: { word: string; translation: string }) => ({
           ...w,
           selected: true,
         })));
+      } else {
+        setTopicError("No words generated. Try a different topic.");
       }
     } catch (err) {
       console.error("Topic generation failed:", err);
+      setTopicError("Failed to generate vocabulary. Please try again.");
     }
     setGeneratingTopic(false);
   };
@@ -599,38 +607,83 @@ export default function AddWordsPage() {
         <>
           {topicWords.length === 0 ? (
             <>
-              <BlockTitle>Choose a Topic</BlockTitle>
+              {/* Custom topic input */}
               <Block>
-                <div className="grid grid-cols-2 gap-3">
-                  {TOPICS.map((topic) => (
-                    <button
-                      key={topic.id}
-                      onClick={() => handleGenerateTopic(topic.id)}
-                      disabled={generatingTopic}
-                      className={`p-4 rounded-2xl border text-center transition-colors ${
-                        selectedTopic === topic.id && generatingTopic
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 bg-gray-50 active:bg-gray-100"
-                      }`}
-                    >
-                      <span className="text-2xl block">{topic.icon}</span>
-                      <span className="text-sm font-medium mt-1 block">
-                        {topic.name}
-                      </span>
-                      {selectedTopic === topic.id && generatingTopic && (
-                        <span className="block mt-2">
-                          <Preloader />
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                <p className="text-gray-500 text-sm mb-3">
+                  Describe a topic and AI will generate vocabulary for you.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g. cooking, animals, at the airport..."
+                    value={customTopic}
+                    onChange={(e) => setCustomTopic(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && customTopic.trim()) {
+                        handleGenerateTopic(customTopic.trim());
+                      }
+                    }}
+                    disabled={generatingTopic}
+                  />
+                  <Button
+                    onClick={() => handleGenerateTopic(customTopic.trim())}
+                    disabled={!customTopic.trim() || generatingTopic}
+                  >
+                    {generatingTopic && selectedTopic === customTopic.trim() ? (
+                      <Preloader />
+                    ) : (
+                      "Go"
+                    )}
+                  </Button>
                 </div>
               </Block>
+
+              {/* Error message */}
+              {topicError && (
+                <Block>
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm text-red-600">{topicError}</p>
+                  </div>
+                </Block>
+              )}
+
+              {/* Loading state */}
+              {generatingTopic && (
+                <Block className="text-center py-4">
+                  <Preloader />
+                  <p className="text-sm text-gray-400 mt-3">Generating vocabulary...</p>
+                </Block>
+              )}
+
+              {/* Quick topic picks */}
+              {!generatingTopic && (
+                <>
+                  <BlockTitle>Quick Topics</BlockTitle>
+                  <Block>
+                    <div className="grid grid-cols-3 gap-2">
+                      {TOPICS.map((topic) => (
+                        <button
+                          key={topic.id}
+                          onClick={() => handleGenerateTopic(topic.name)}
+                          disabled={generatingTopic}
+                          className="p-3 rounded-2xl border border-gray-200 bg-gray-50 active:bg-gray-100 text-center transition-colors"
+                        >
+                          <span className="text-xl block">{topic.icon}</span>
+                          <span className="text-[11px] font-medium mt-0.5 block text-gray-700 leading-tight">
+                            {topic.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </Block>
+                </>
+              )}
             </>
           ) : (
             <>
               <BlockTitle>
-                Review Words ({topicWords.filter((w) => w.selected).length} selected)
+                {selectedTopic} — {topicWords.filter((w) => w.selected).length} selected
               </BlockTitle>
               <List strongIos insetIos>
                 {topicWords.map((w, i) => (
@@ -660,9 +713,10 @@ export default function AddWordsPage() {
                   onClick={() => {
                     setTopicWords([]);
                     setSelectedTopic(null);
+                    setTopicError("");
                   }}
                 >
-                  Back to Topics
+                  Back
                 </Button>
               </Block>
             </>
