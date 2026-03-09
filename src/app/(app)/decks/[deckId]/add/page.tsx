@@ -55,6 +55,7 @@ export default function AddWordsPage() {
   const [generatingTopic, setGeneratingTopic] = useState(false);
   const [topicWords, setTopicWords] = useState<ExtractedWord[]>([]);
   const [topicError, setTopicError] = useState("");
+  const [wordCount, setWordCount] = useState(15);
 
   // Active tab
   const [activeTab, setActiveTab] = useState<"manual" | "photo" | "text" | "topic">("manual");
@@ -319,6 +320,7 @@ export default function AddWordsPage() {
           nativeLang,
           targetLang: targetLang,
           existingWords: existingWords.slice(0, 100),
+          wordCount,
         }),
       });
       const data = await res.json();
@@ -376,7 +378,7 @@ export default function AddWordsPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 px-2 rounded-lg text-[12px] font-semibold transition-all ${
+              className={`flex-1 py-2 px-2 rounded-lg text-[12px] font-semibold ${
                 activeTab === tab
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-500"
@@ -678,6 +680,27 @@ export default function AddWordsPage() {
                 </div>
               </Block>
 
+              {/* Word count selector */}
+              <Block>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[13px] font-semibold text-gray-500">Number of words</span>
+                  <span className="text-[13px] font-bold text-blue-500 tabular-nums">{wordCount}</span>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={50}
+                  step={5}
+                  value={wordCount}
+                  onChange={(e) => setWordCount(Number(e.target.value))}
+                  className="w-full accent-blue-500"
+                />
+                <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                  <span>5</span>
+                  <span>50</span>
+                </div>
+              </Block>
+
               {/* Error message */}
               {topicError && (
                 <Block>
@@ -691,7 +714,7 @@ export default function AddWordsPage() {
               {generatingTopic && (
                 <Block className="text-center py-4">
                   <Preloader />
-                  <p className="text-sm text-gray-400 mt-3">Generating vocabulary...</p>
+                  <p className="text-sm text-gray-400 mt-3">Generating {wordCount} words...</p>
                 </Block>
               )}
 

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, nativeLang, targetLang, existingWords } = await request.json();
+    const { topic, nativeLang, targetLang, existingWords, wordCount } = await request.json();
 
     if (!topic || !targetLang || !nativeLang) {
       return NextResponse.json(
@@ -50,12 +50,15 @@ export async function POST(request: NextRequest) {
     const targetName = getLangName(targetLang);
     const nativeName = getLangName(nativeLang);
 
+    // Clamp word count between 5 and 50, default 15
+    const count = Math.min(50, Math.max(5, wordCount || 15));
+
     const excludeClause =
       existingWords && existingWords.length > 0
         ? `\n- Do NOT include any of these words (the user already has them): ${existingWords.join(", ")}`
         : "";
 
-    const prompt = `You are a vocabulary teacher. Generate 12-15 useful vocabulary words for the topic: "${topic}".
+    const prompt = `You are a vocabulary teacher. Generate exactly ${count} useful vocabulary words for the topic: "${topic}".
 
 The words should be in ${targetName} with translations in ${nativeName}.
 
@@ -82,7 +85,7 @@ Example format: [{"word":"שלום","translation":"hello"},{"word":"תודה","t
           { role: "user", content: prompt },
         ],
         temperature: 0.3,
-        max_tokens: 2048,
+        max_tokens: count > 20 ? 4096 : 2048,
       }),
     });
 

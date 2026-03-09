@@ -24,7 +24,7 @@ export default function MultipleChoice({
     setAnswered(true);
 
     const isCorrect = option === word.translation;
-    setTimeout(() => onAnswer(isCorrect), 1000);
+    setTimeout(() => onAnswer(isCorrect), 600);
   };
 
   return (

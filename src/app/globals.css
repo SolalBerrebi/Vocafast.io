@@ -114,3 +114,33 @@ input:focus, textarea:focus {
 .page-content {
   -webkit-overflow-scrolling: touch;
 }
+
+/* ─── Faster transitions globally ─── */
+/* Override slow transition-all with targeted fast transitions */
+.transition-colors {
+  transition-duration: 100ms !important;
+}
+.transition-transform {
+  transition-duration: 100ms !important;
+}
+
+/* Range input styling for iOS */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: #e5e7eb;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #3b82f6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  cursor: pointer;
+}

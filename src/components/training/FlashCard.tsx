@@ -26,7 +26,7 @@ export default function FlashCard({ word, onAnswer }: FlashCardProps) {
 
   const handleAnswer = (quality: AnswerQuality) => {
     setIsLeaving(true);
-    setTimeout(() => onAnswer(quality), 200);
+    setTimeout(() => onAnswer(quality), 150);
   };
 
   return (
@@ -36,7 +36,7 @@ export default function FlashCard({ word, onAnswer }: FlashCardProps) {
           key={word.id}
           initial={{ opacity: 0, scale: 0.95, x: 40 }}
           animate={{ opacity: isLeaving ? 0 : 1, scale: isLeaving ? 0.95 : 1, x: isLeaving ? -40 : 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.15 }}
           className="w-full max-w-sm"
         >
           {/* Card */}
@@ -49,7 +49,7 @@ export default function FlashCard({ word, onAnswer }: FlashCardProps) {
               className="absolute inset-0"
               initial={false}
               animate={{ rotateY: isFlipped ? 180 : 0 }}
-              transition={{ duration: 0.45, type: "spring", stiffness: 300, damping: 30 }}
+              transition={{ duration: 0.35, type: "spring", stiffness: 400, damping: 35 }}
               style={{ transformStyle: "preserve-3d" }}
             >
               {/* Front */}

@@ -81,13 +81,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <Page className="fixed inset-0 flex flex-col">
-      {/* Header with env switcher */}
-      <div className="flex-shrink-0 flex items-center justify-center py-2.5 border-b border-gray-100 bg-white/90 backdrop-blur-xl">
+      {/* Header with env switcher — z-20 so dropdown renders above scrollable content */}
+      <div className="flex-shrink-0 flex items-center justify-center py-2.5 border-b border-gray-100 bg-white/90 backdrop-blur-xl z-20 relative">
         <EnvSwitcher />
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20 scrollbar-hide relative z-0">
         {children}
       </div>
 

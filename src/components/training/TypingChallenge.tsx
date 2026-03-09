@@ -26,7 +26,7 @@ export default function TypingChallenge({
     setIsCorrect(correct);
     setSubmitted(true);
 
-    setTimeout(() => onAnswer(correct), 1500);
+    setTimeout(() => onAnswer(correct), 800);
   };
 
   return (

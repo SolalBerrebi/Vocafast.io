@@ -129,7 +129,7 @@ export default function DeckDetailPage() {
 
   return (
     <>
-      <div className="px-5 pt-2 pb-8">
+      <div className="px-5 pt-2 pb-24">
         {/* Back button */}
         <button
           onClick={() => router.back()}
@@ -155,22 +155,13 @@ export default function DeckDetailPage() {
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-2.5 mb-5">
-          <button
-            onClick={() => router.push(`/decks/${deckId}/add`)}
-            className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-semibold text-[14px] active:scale-[0.98] transition-all"
-          >
-            Add Words
-          </button>
-          <button
-            onClick={() => router.push(`/decks/${deckId}/train`)}
-            disabled={words.length === 0}
-            className="flex-1 py-3 rounded-xl bg-white border border-gray-200 text-gray-800 font-semibold text-[14px] disabled:opacity-40 active:scale-[0.98] transition-all"
-          >
-            Train
-          </button>
-        </div>
+        {/* Add words button */}
+        <button
+          onClick={() => router.push(`/decks/${deckId}/add`)}
+          className="w-full py-3 rounded-xl bg-white border border-gray-200 text-gray-800 font-semibold text-[14px] active:scale-[0.98] transition-transform mb-5"
+        >
+          + Add Words
+        </button>
 
         {/* Search */}
         {words.length > 5 && (
@@ -222,6 +213,21 @@ export default function DeckDetailPage() {
           </List>
         )}
       </div>
+
+      {/* Sticky Train button at bottom */}
+      {words.length > 0 && (
+        <div className="fixed bottom-20 left-0 right-0 px-5 pb-3 pt-2 bg-gradient-to-t from-white via-white to-white/0 z-10">
+          <button
+            onClick={() => router.push(`/decks/${deckId}/train`)}
+            className="w-full py-4 rounded-2xl bg-green-500 text-white font-bold text-[16px] active:scale-[0.98] transition-transform shadow-lg shadow-green-500/25 flex items-center justify-center gap-2.5"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" />
+            </svg>
+            Start Training
+          </button>
+        </div>
+      )}
 
       {/* Edit Word Sheet */}
       <Sheet
