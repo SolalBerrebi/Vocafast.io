@@ -46,6 +46,7 @@ export default function AddWordsPage() {
   // Photo capture state (CAPT-04 to CAPT-07)
   const [photoProcessing, setPhotoProcessing] = useState(false);
   const [photoProgress, setPhotoProgress] = useState("");
+  const [photoError, setPhotoError] = useState("");
   const [photoWords, setPhotoWords] = useState<ExtractedWord[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +100,39 @@ export default function AddWordsPage() {
     setLoading(false);
   };
 
+  // Resize image client-side to avoid exceeding API body limits
+  const compressImage = (file: File, maxDim = 1200): Promise<{ base64: string; mimeType: string; dataUrl: string }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+
+        // Scale down if needed
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        const base64 = dataUrl.split(",")[1];
+        resolve({ base64, mimeType: "image/jpeg", dataUrl });
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   // CAPT-04 to CAPT-07: Photo capture & Gemini Vision extraction
   const handlePhotoSelected = async (file: File) => {
     if (!activeEnvironment) return;
@@ -106,21 +140,12 @@ export default function AddWordsPage() {
     setPhotoProcessing(true);
     setPhotoProgress("Preparing image...");
     setPhotoWords([]);
+    setPhotoError("");
 
     try {
-      // Convert file to base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          setPhotoPreview(result);
-          // Strip the data:image/...;base64, prefix
-          const base64Data = result.split(",")[1];
-          resolve(base64Data);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Compress image to reasonable size for API upload
+      const { base64, mimeType, dataUrl } = await compressImage(file);
+      setPhotoPreview(dataUrl);
 
       setPhotoProgress("Analyzing image with AI...");
 
@@ -129,15 +154,26 @@ export default function AddWordsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageBase64: base64,
-          mimeType: file.type || "image/jpeg",
+          mimeType,
           targetLang: activeEnvironment.target_lang,
           nativeLang,
         }),
       });
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "Unknown error");
+        console.error("API error:", res.status, errorText);
+        setPhotoError(`Server error (${res.status}). Try a smaller or clearer image.`);
+        setPhotoProgress("");
+        setPhotoProcessing(false);
+        return;
+      }
+
       const data = await res.json();
 
       if (data.error) {
-        setPhotoProgress(data.error);
+        setPhotoError(data.error);
+        setPhotoProgress("");
       } else if (data.words && data.words.length > 0) {
         setPhotoWords(
           data.words.map((w: { word: string; translation: string }) => ({
@@ -146,12 +182,15 @@ export default function AddWordsPage() {
           })),
         );
         setPhotoProgress("");
+        setPhotoError("");
       } else {
-        setPhotoProgress("No word pairs found. Try a photo with a vocabulary table.");
+        setPhotoError("No word pairs found. Try a photo with a vocabulary table.");
+        setPhotoProgress("");
       }
     } catch (err) {
       console.error("Photo extraction failed:", err);
-      setPhotoProgress("Failed to process image. Please try again.");
+      setPhotoError("Failed to process image. Please try again.");
+      setPhotoProgress("");
     }
     setPhotoProcessing(false);
   };
@@ -382,7 +421,19 @@ export default function AddWordsPage() {
                   }}
                 />
 
-                {!photoProcessing ? (
+                {/* Error message */}
+                {photoError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm text-red-600">{photoError}</p>
+                  </div>
+                )}
+
+                {photoProcessing ? (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <Preloader />
+                    <p className="text-sm text-gray-500">{photoProgress}</p>
+                  </div>
+                ) : (
                   <div className="flex gap-3">
                     <Button
                       className="flex-1"
@@ -410,11 +461,6 @@ export default function AddWordsPage() {
                         Gallery
                       </span>
                     </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-3 py-4">
-                    <Preloader />
-                    <p className="text-sm text-gray-500">{photoProgress}</p>
                   </div>
                 )}
               </Block>

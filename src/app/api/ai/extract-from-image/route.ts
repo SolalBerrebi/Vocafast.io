@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Allow larger request body for image uploads and longer execution for Gemini API
+export const maxDuration = 30;
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_MODEL = "gemini-2.0-flash";
 
