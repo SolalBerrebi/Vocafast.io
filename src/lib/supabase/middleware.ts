@@ -31,23 +31,58 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  // Auth pages — redirect to app if already logged in
-  if (user && (path.startsWith("/login") || path.startsWith("/signup"))) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/decks";
-    return NextResponse.redirect(url);
-  }
+  const isAuthPage = path.startsWith("/login") || path.startsWith("/signup") || path.startsWith("/callback");
+  const isOnboardingPage = path.startsWith("/native-lang") || path.startsWith("/target-lang") || path.startsWith("/first-deck");
 
-  // Protected pages — redirect to login if not authenticated
-  if (
-    !user &&
-    !path.startsWith("/login") &&
-    !path.startsWith("/signup") &&
-    !path.startsWith("/callback")
-  ) {
+  // Not logged in: only allow auth pages
+  if (!user && !isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
+  }
+
+  // Logged in: redirect away from auth pages
+  if (user && isAuthPage) {
+    // Check onboarding status to decide where to send them
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .single();
+
+    const url = request.nextUrl.clone();
+    url.pathname = profile?.onboarding_completed ? "/decks" : "/native-lang";
+    return NextResponse.redirect(url);
+  }
+
+  // Logged in: check onboarding for app pages (not onboarding pages)
+  if (user && !isOnboardingPage && !isAuthPage) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .single();
+
+    if (profile && !profile.onboarding_completed) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/native-lang";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Logged in + onboarding complete: redirect away from onboarding pages
+  if (user && isOnboardingPage) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.onboarding_completed) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/decks";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

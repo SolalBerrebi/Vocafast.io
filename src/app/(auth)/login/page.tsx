@@ -31,7 +31,9 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
+      // Middleware will redirect to /native-lang or /decks based on onboarding status
       router.push("/decks");
+      router.refresh();
     }
   };
 
