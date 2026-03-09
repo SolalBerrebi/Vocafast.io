@@ -32,10 +32,16 @@ export default function TypingChallenge({
   return (
     <div className="flex flex-col items-center justify-center h-full px-6">
       <div className="w-full max-w-sm">
-        <p className="text-sm text-gray-400 text-center mb-2">
+        <p className="text-sm text-gray-400 text-center mb-2 font-medium">
           Type the translation
         </p>
-        <p className="text-3xl font-bold text-center mb-10">{word.word}</p>
+        <p className="text-3xl font-bold text-center mb-3 tracking-tight">{word.word}</p>
+        {word.context_sentence && (
+          <p className="text-sm text-gray-400 text-center mb-8 italic">
+            {word.context_sentence}
+          </p>
+        )}
+        {!word.context_sentence && <div className="mb-8" />}
 
         <form onSubmit={handleSubmit}>
           <input
@@ -45,12 +51,16 @@ export default function TypingChallenge({
             disabled={submitted}
             placeholder="Type translation..."
             autoFocus
-            className={`w-full p-4 rounded-2xl border-2 text-center text-lg font-medium outline-none transition-colors ${
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            className={`w-full px-5 py-4 rounded-2xl border-2 text-center text-lg font-medium outline-none transition-all text-[16px] ${
               submitted
                 ? isCorrect
-                  ? "border-green-400 bg-green-50"
-                  : "border-red-400 bg-red-50"
-                : "border-gray-200 focus:border-blue-400"
+                  ? "border-green-400 bg-green-50 shadow-sm shadow-green-100"
+                  : "border-red-400 bg-red-50 shadow-sm shadow-red-100"
+                : "border-gray-200 bg-gray-50 focus:border-blue-400 focus:bg-white"
             }`}
           />
 
@@ -58,7 +68,7 @@ export default function TypingChallenge({
             <motion.button
               type="submit"
               disabled={!input.trim()}
-              className="w-full mt-4 p-4 rounded-2xl bg-blue-500 text-white font-semibold disabled:opacity-50"
+              className="w-full mt-4 py-3.5 rounded-2xl bg-blue-500 text-white font-semibold text-[16px] disabled:opacity-40 active:scale-[0.98] transition-all"
               whileTap={{ scale: 0.97 }}
             >
               Check
@@ -66,17 +76,25 @@ export default function TypingChallenge({
           )}
         </form>
 
-        {submitted && !isCorrect && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center mt-4 text-gray-600"
+        {submitted && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`text-center mt-5 py-3 px-4 rounded-xl ${
+              isCorrect ? "bg-green-50" : "bg-red-50"
+            }`}
           >
-            Correct answer:{" "}
-            <span className="font-bold text-green-600">
-              {word.translation}
-            </span>
-          </motion.p>
+            {isCorrect ? (
+              <p className="text-green-600 font-semibold">Correct!</p>
+            ) : (
+              <p className="text-gray-600">
+                Correct answer:{" "}
+                <span className="font-bold text-green-600">
+                  {word.translation}
+                </span>
+              </p>
+            )}
+          </motion.div>
         )}
       </div>
     </div>

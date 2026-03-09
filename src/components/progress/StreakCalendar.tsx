@@ -9,7 +9,7 @@ export default function StreakCalendar({ activeDates }: StreakCalendarProps) {
   const activeSet = new Set(activeDates);
 
   // Show last 35 days (5 weeks)
-  const days: { date: string; label: string; active: boolean }[] = [];
+  const days: { date: string; label: string; active: boolean; isToday: boolean }[] = [];
   for (let i = 34; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
@@ -18,6 +18,7 @@ export default function StreakCalendar({ activeDates }: StreakCalendarProps) {
       date: iso,
       label: d.getDate().toString(),
       active: activeSet.has(iso),
+      isToday: i === 0,
     });
   }
 
@@ -30,7 +31,6 @@ export default function StreakCalendar({ activeDates }: StreakCalendarProps) {
     if (activeSet.has(iso)) {
       streak++;
     } else if (i > 0) {
-      // Allow today to be missed (might not have studied yet)
       break;
     }
   }
@@ -38,9 +38,12 @@ export default function StreakCalendar({ activeDates }: StreakCalendarProps) {
   return (
     <div>
       {streak > 0 && (
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2.5 mb-5">
           <span className="text-2xl">🔥</span>
-          <span className="font-bold text-lg">{streak} day streak</span>
+          <div>
+            <span className="font-bold text-lg tracking-tight">{streak} day streak</span>
+            <p className="text-[12px] text-gray-400">Keep it up!</p>
+          </div>
         </div>
       )}
 
@@ -48,7 +51,7 @@ export default function StreakCalendar({ activeDates }: StreakCalendarProps) {
         {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
           <div
             key={i}
-            className="text-center text-xs text-gray-400 font-medium pb-1"
+            className="text-center text-[11px] text-gray-400 font-semibold pb-1"
           >
             {d}
           </div>
@@ -56,10 +59,12 @@ export default function StreakCalendar({ activeDates }: StreakCalendarProps) {
         {days.map((day) => (
           <div
             key={day.date}
-            className={`aspect-square rounded-lg flex items-center justify-center text-xs font-medium ${
+            className={`aspect-square rounded-lg flex items-center justify-center text-[11px] font-medium transition-colors ${
               day.active
                 ? "bg-green-500 text-white"
-                : "bg-gray-100 text-gray-400"
+                : day.isToday
+                  ? "bg-blue-50 text-blue-500 ring-1 ring-blue-200"
+                  : "bg-gray-50 text-gray-400"
             }`}
           >
             {day.label}

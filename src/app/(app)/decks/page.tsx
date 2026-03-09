@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Navbar,
-  Block,
-  Fab,
-  Preloader,
-} from "konsta/react";
+import { Preloader } from "konsta/react";
 import { createClient } from "@/lib/supabase/client";
 import { useEnvironmentStore } from "@/stores/environment-store";
 import type { Deck } from "@/types/database";
@@ -40,54 +35,52 @@ export default function DecksPage() {
   }, [activeEnvironmentId, supabase]);
 
   return (
-    <>
-      <Navbar title="My Decks" />
+    <div className="px-4 pt-4 pb-8">
+      <h1 className="text-2xl font-bold tracking-tight mb-5">My Decks</h1>
 
       {loading ? (
-        <Block className="text-center mt-16">
+        <div className="flex justify-center mt-20">
           <Preloader />
-        </Block>
+        </div>
       ) : decks.length === 0 ? (
-        <Block className="text-center mt-16">
+        <div className="text-center mt-20">
           <div className="text-6xl mb-4">📚</div>
-          <h2 className="text-xl font-semibold">No decks yet</h2>
-          <p className="text-gray-500 mt-2">
+          <h2 className="text-xl font-semibold tracking-tight">No decks yet</h2>
+          <p className="text-gray-400 mt-2 text-[15px]">
             Create your first vocabulary deck to start learning
           </p>
-        </Block>
+        </div>
       ) : (
-        <Block>
-          <div className="space-y-3">
-            {decks.map((deck) => (
-              <DeckCard
-                key={deck.id}
-                deck={deck}
-                onClick={() => router.push(`/decks/${deck.id}`)}
-              />
-            ))}
-          </div>
-        </Block>
+        <div className="space-y-2.5">
+          {decks.map((deck) => (
+            <DeckCard
+              key={deck.id}
+              deck={deck}
+              onClick={() => router.push(`/decks/${deck.id}`)}
+            />
+          ))}
+        </div>
       )}
 
-      <Fab
-        className="fixed right-4 bottom-24 z-40"
+      {/* FAB */}
+      <button
         onClick={() => router.push("/decks/new")}
-        icon={
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-        }
-      />
-    </>
+        className="fixed right-5 bottom-24 z-40 w-14 h-14 rounded-full bg-blue-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center active:scale-95 transition-all"
+      >
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 4v16m8-8H4"
+          />
+        </svg>
+      </button>
+    </div>
   );
 }

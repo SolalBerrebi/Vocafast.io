@@ -160,22 +160,22 @@ export default function TrainingSessionPage() {
   return (
     <Page className="h-screen flex flex-col">
       {/* Progress bar */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex justify-between items-center mb-2">
+      <div className="px-5 pt-safe-top pb-2">
+        <div className="flex justify-between items-center mb-2.5 pt-3">
           <button
             onClick={() => {
               resetSession();
               router.back();
             }}
-            className="text-blue-500 text-sm font-medium"
+            className="text-blue-500 text-[15px] font-medium py-1"
           >
             Quit
           </button>
-          <span className="text-sm text-gray-400">
+          <span className="text-[13px] text-gray-400 font-medium tabular-nums">
             {currentIndex + 1} / {cards.length}
           </span>
         </div>
-        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
           <div
             className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}

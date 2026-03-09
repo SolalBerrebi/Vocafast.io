@@ -3,12 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Navbar,
   List,
   ListItem,
-  BlockTitle,
-  Block,
-  Button,
   Sheet,
   Radio,
 } from "konsta/react";
@@ -49,7 +45,6 @@ export default function SettingsPage() {
     router.push("/login");
   };
 
-  // Filter out languages that already have an environment
   const existingCodes = new Set(environments.map((e) => e.target_lang));
   const availableLanguages = LANGUAGES.filter((l) => !existingCodes.has(l.code));
 
@@ -65,38 +60,53 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Navbar title="Settings" />
+      <div className="px-5 pt-4 pb-8">
+        <h1 className="text-2xl font-bold tracking-tight mb-5">Settings</h1>
 
-      <BlockTitle>Account</BlockTitle>
-      <List strongIos insetIos>
-        <ListItem title="Email" after={user?.email ?? "—"} />
-      </List>
+        {/* Account */}
+        <div className="mb-6">
+          <h2 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 px-1">Account</h2>
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="px-4 py-3.5 flex justify-between items-center">
+              <span className="text-[15px] font-medium">Email</span>
+              <span className="text-[14px] text-gray-400">{user?.email ?? "—"}</span>
+            </div>
+          </div>
+        </div>
 
-      <BlockTitle>Language Environments</BlockTitle>
-      <List strongIos insetIos>
-        {environments.map((env) => (
-          <ListItem
-            key={env.id}
-            title={getLangName(env.target_lang)}
-            media={<span className="text-xl">{env.icon}</span>}
-            after={env.is_active ? "Active" : ""}
-          />
-        ))}
-        {availableLanguages.length > 0 && (
-          <ListItem
-            title="Add Language"
-            link
-            onClick={() => setAddSheetOpen(true)}
-            media={<span className="text-xl">➕</span>}
-          />
-        )}
-      </List>
+        {/* Languages */}
+        <div className="mb-8">
+          <h2 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 px-1">Languages</h2>
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
+            {environments.map((env) => (
+              <div key={env.id} className="px-4 py-3.5 flex items-center gap-3">
+                <span className="text-xl">{env.icon}</span>
+                <span className="text-[15px] font-medium flex-1">{getLangName(env.target_lang)}</span>
+                {env.is_active && (
+                  <span className="text-[12px] font-semibold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">Active</span>
+                )}
+              </div>
+            ))}
+            {availableLanguages.length > 0 && (
+              <button
+                className="w-full px-4 py-3.5 flex items-center gap-3 active:bg-gray-50 transition-colors"
+                onClick={() => setAddSheetOpen(true)}
+              >
+                <span className="text-xl">➕</span>
+                <span className="text-[15px] font-medium text-blue-500">Add Language</span>
+              </button>
+            )}
+          </div>
+        </div>
 
-      <Block className="mt-8">
-        <Button large colors={{ fillBgIos: "bg-red-500", fillTextIos: "text-white" }} onClick={handleSignOut}>
+        {/* Sign out */}
+        <button
+          onClick={handleSignOut}
+          className="w-full py-3.5 rounded-xl bg-red-50 text-red-500 font-semibold text-[16px] active:scale-[0.98] transition-all"
+        >
           Sign Out
-        </Button>
-      </Block>
+        </button>
+      </div>
 
       {/* Add Language Sheet */}
       <Sheet
@@ -104,23 +114,23 @@ export default function SettingsPage() {
         onBackdropClick={() => setAddSheetOpen(false)}
         className="pb-safe"
       >
-        <div className="px-4 pt-4 pb-2 flex justify-between items-center">
+        <div className="px-5 pt-4 pb-2 flex justify-between items-center">
           <button
-            className="text-blue-500 text-sm font-medium"
+            className="text-blue-500 text-[15px] font-medium"
             onClick={() => setAddSheetOpen(false)}
           >
             Cancel
           </button>
-          <span className="font-semibold">Add Language</span>
+          <span className="font-semibold text-[16px]">Add Language</span>
           <button
-            className={`text-sm font-semibold ${selectedLang ? "text-blue-500" : "text-gray-300"}`}
+            className={`text-[15px] font-semibold ${selectedLang ? "text-blue-500" : "text-gray-300"}`}
             onClick={handleAddLanguage}
             disabled={!selectedLang || adding}
           >
             {adding ? "Adding..." : "Add"}
           </button>
         </div>
-        <List strongIos insetIos className="max-h-80 overflow-y-auto">
+        <List strongIos insetIos className="max-h-80 overflow-y-auto scrollbar-hide">
           {availableLanguages.map((lang) => (
             <ListItem
               key={lang.code}

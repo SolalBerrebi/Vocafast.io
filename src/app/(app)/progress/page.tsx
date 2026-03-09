@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Navbar, Block, Preloader, BlockTitle } from "konsta/react";
+import { Preloader } from "konsta/react";
 import { createClient } from "@/lib/supabase/client";
 import { useEnvironmentStore } from "@/stores/environment-store";
 import StatsCard from "@/components/progress/StatsCard";
@@ -28,7 +28,6 @@ export default function ProgressPage() {
       return;
     }
 
-    // Fetch decks for this environment
     const { data: decks } = await supabase
       .from("decks")
       .select("id, word_count")
@@ -37,7 +36,6 @@ export default function ProgressPage() {
     const deckIds = decks?.map((d) => d.id) ?? [];
     const totalWords = decks?.reduce((sum, d) => sum + d.word_count, 0) ?? 0;
 
-    // Count mastered words (repetitions >= 3)
     let masteredWords = 0;
     if (deckIds.length > 0) {
       const { count } = await supabase
@@ -48,7 +46,6 @@ export default function ProgressPage() {
       masteredWords = count ?? 0;
     }
 
-    // Fetch sessions
     const { data: sessions } = await supabase
       .from("training_sessions")
       .select("correct, incorrect, started_at")
@@ -78,27 +75,27 @@ export default function ProgressPage() {
 
   if (loading) {
     return (
-      <>
-        <Navbar title="Progress" />
-        <Block className="text-center mt-16">
+      <div className="px-5 pt-4 pb-8">
+        <h1 className="text-2xl font-bold tracking-tight mb-5">Progress</h1>
+        <div className="flex justify-center mt-16">
           <Preloader />
-        </Block>
-      </>
+        </div>
+      </div>
     );
   }
 
   if (!stats || stats.totalSessions === 0) {
     return (
-      <>
-        <Navbar title="Progress" />
-        <Block className="text-center mt-16">
+      <div className="px-5 pt-4 pb-8">
+        <h1 className="text-2xl font-bold tracking-tight mb-5">Progress</h1>
+        <div className="text-center mt-20">
           <div className="text-6xl mb-4">📊</div>
-          <h2 className="text-xl font-semibold">No progress yet</h2>
-          <p className="text-gray-500 mt-2">
+          <h2 className="text-xl font-semibold tracking-tight">No progress yet</h2>
+          <p className="text-gray-400 mt-2 text-[15px]">
             Complete a training session to see your stats
           </p>
-        </Block>
-      </>
+        </div>
+      </div>
     );
   }
 
@@ -111,30 +108,22 @@ export default function ProgressPage() {
       : 0;
 
   return (
-    <>
-      <Navbar title="Progress" />
+    <div className="px-5 pt-4 pb-8">
+      <h1 className="text-2xl font-bold tracking-tight mb-5">Progress</h1>
 
-      <Block>
-        <div className="grid grid-cols-2 gap-3">
-          <StatsCard label="Total Words" value={stats.totalWords} icon="📚" />
-          <StatsCard
-            label="Mastered"
-            value={stats.masteredWords}
-            icon="⭐"
-          />
-          <StatsCard
-            label="Sessions"
-            value={stats.totalSessions}
-            icon="🧠"
-          />
-          <StatsCard label="Accuracy" value={`${accuracy}%`} icon="🎯" />
+      <div className="grid grid-cols-2 gap-2.5 mb-6">
+        <StatsCard label="Total Words" value={stats.totalWords} icon="📚" />
+        <StatsCard label="Mastered" value={stats.masteredWords} icon="⭐" />
+        <StatsCard label="Sessions" value={stats.totalSessions} icon="🧠" />
+        <StatsCard label="Accuracy" value={`${accuracy}%`} icon="🎯" />
+      </div>
+
+      <div className="mb-4">
+        <h2 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Study Activity</h2>
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <StreakCalendar activeDates={stats.sessionDates} />
         </div>
-      </Block>
-
-      <BlockTitle>Study Activity</BlockTitle>
-      <Block>
-        <StreakCalendar activeDates={stats.sessionDates} />
-      </Block>
-    </>
+      </div>
+    </div>
   );
 }

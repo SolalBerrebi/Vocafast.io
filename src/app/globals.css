@@ -13,32 +13,93 @@
   --font-mono: var(--font-geist-mono);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  /* Prevent overscroll bounce on iOS */
-  overscroll-behavior: none;
-}
-
-/* PWA safe areas */
+/* ─── Base ─── */
 html {
+  height: 100%;
+  overflow: hidden;
+  /* PWA safe areas */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
 
-/* RTL support for Hebrew and Arabic text */
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent overscroll bounce */
+  overscroll-behavior: none;
+  /* Prevent horizontal scroll */
+  overflow-x: hidden;
+  /* Prevent text size adjust on orientation change */
+  -webkit-text-size-adjust: 100%;
+  /* Prevent tap highlight */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── Prevent unwanted behaviors on iOS PWA ─── */
+
+/* Prevent user zoom/pinch */
+* {
+  touch-action: pan-y;
+}
+
+/* Prevent text selection on UI elements */
+button, a, label, nav, [role="button"], [role="tab"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection on content areas */
+p, h1, h2, h3, h4, h5, h6, span, td, th, li, input, textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* Smooth scrolling for scrollable containers */
+.overflow-y-auto,
+.overflow-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* ─── Scrollbar hiding (clean look) ─── */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ─── Active states for interactive elements ─── */
+button:active:not(:disabled):not([class*="scale"]) {
+  opacity: 0.7;
+  transition: opacity 0.1s;
+}
+
+/* ─── Tabular figures for numbers ─── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Input focus improvements ─── */
+input:focus, textarea:focus {
+  outline: none;
+}
+
+/* ─── RTL support for Hebrew and Arabic text ─── */
 [dir="rtl"] {
   direction: rtl;
   text-align: right;
 }
 
-/* Mixed-direction content: RTL word inside LTR UI */
 .rtl-text {
   direction: rtl;
   unicode-bidi: isolate;
@@ -47,4 +108,9 @@ html {
 .ltr-text {
   direction: ltr;
   unicode-bidi: isolate;
+}
+
+/* ─── Fix Konsta UI page scrolling ─── */
+.page-content {
+  -webkit-overflow-scrolling: touch;
 }

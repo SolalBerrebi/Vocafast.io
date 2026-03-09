@@ -2,15 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Page,
-  Navbar,
-  Block,
-  List,
-  ListInput,
-  Button,
-  BlockTitle,
-} from "konsta/react";
+import { Page } from "konsta/react";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
@@ -39,54 +31,56 @@ export default function LoginPage() {
 
   return (
     <Page>
-      <Navbar title="Vocafast" />
-      <Block className="text-center mt-8">
-        <h1 className="text-3xl font-bold">Welcome back</h1>
-        <p className="text-gray-500 mt-2">Sign in to continue learning</p>
-      </Block>
+      <div className="flex flex-col justify-center min-h-screen px-6 py-12">
+        <div className="text-center mb-10">
+          <div className="text-5xl mb-4">📖</div>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
+          <p className="text-gray-400 mt-2 text-[15px]">Sign in to continue learning</p>
+        </div>
 
-      <form onSubmit={handleLogin}>
-        <List strongIos insetIos>
-          <ListInput
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setEmail(e.target.value)
-            }
-          />
-          <ListInput
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setPassword(e.target.value)
-            }
-          />
-        </List>
+        <form onSubmit={handleLogin} className="w-full max-w-sm mx-auto">
+          <div className="space-y-3 mb-6">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              className="w-full px-4 py-3.5 rounded-xl bg-gray-50 border border-gray-200 text-[16px] placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className="w-full px-4 py-3.5 rounded-xl bg-gray-50 border border-gray-200 text-[16px] placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
+            />
+          </div>
 
-        {error && (
-          <Block className="text-red-500 text-center text-sm">{error}</Block>
-        )}
+          {error && (
+            <p className="text-red-500 text-center text-sm mb-4 bg-red-50 rounded-xl py-2.5 px-4">{error}</p>
+          )}
 
-        <Block>
-          <Button large onClick={handleLogin} disabled={loading}>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3.5 rounded-xl bg-blue-500 text-white font-semibold text-[16px] disabled:opacity-50 active:scale-[0.98] transition-all"
+          >
             {loading ? "Signing in..." : "Sign In"}
-          </Button>
-        </Block>
-      </form>
+          </button>
+        </form>
 
-      <Block className="text-center">
-        <BlockTitle>
+        <p className="text-center mt-8 text-sm text-gray-500">
           Don&apos;t have an account?{" "}
           <button
             onClick={() => router.push("/signup")}
-            className="text-blue-500 underline"
+            className="text-blue-500 font-semibold"
           >
             Sign Up
           </button>
-        </BlockTitle>
-      </Block>
+        </p>
+      </div>
     </Page>
   );
 }

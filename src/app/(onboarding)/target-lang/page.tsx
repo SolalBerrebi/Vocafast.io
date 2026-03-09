@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Navbar, Block, Button, List, ListItem, Radio } from "konsta/react";
 import { createClient } from "@/lib/supabase/client";
 import { useEnvironment } from "@/hooks/useEnvironment";
 
@@ -63,41 +62,52 @@ export default function TargetLangPage() {
   };
 
   return (
-    <>
-      <Navbar title="Step 2 of 3" />
-      <Block className="text-center mt-4">
-        <h1 className="text-2xl font-bold">What language do you want to learn?</h1>
-        <p className="text-gray-500 mt-2">
+    <div className="px-5 pt-6 pb-8">
+      {/* Step indicator */}
+      <div className="flex gap-2 mb-8">
+        <div className="flex-1 h-1 rounded-full bg-blue-500" />
+        <div className="flex-1 h-1 rounded-full bg-blue-500" />
+        <div className="flex-1 h-1 rounded-full bg-gray-200" />
+      </div>
+
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-bold tracking-tight">What language do you want to learn?</h1>
+        <p className="text-gray-400 mt-2 text-[15px]">
           You can add more languages later
         </p>
-      </Block>
+      </div>
 
-      <List strongIos insetIos>
+      <div className="space-y-1.5 mb-8">
         {availableLanguages.map((lang) => (
-          <ListItem
+          <button
             key={lang.code}
-            title={lang.name}
-            media={<span className="text-xl">{lang.flag}</span>}
-            after={
-              <Radio
-                checked={selected === lang.code}
-                onChange={() => setSelected(lang.code)}
-              />
-            }
             onClick={() => setSelected(lang.code)}
-          />
+            className={`w-full px-4 py-3.5 rounded-xl flex items-center gap-3 transition-all ${
+              selected === lang.code
+                ? "bg-blue-50 border-2 border-blue-500"
+                : "bg-white border-2 border-gray-100 active:bg-gray-50"
+            }`}
+          >
+            <span className="text-xl">{lang.flag}</span>
+            <span className={`font-medium text-[15px] ${
+              selected === lang.code ? "text-blue-600" : "text-gray-800"
+            }`}>{lang.name}</span>
+            {selected === lang.code && (
+              <svg className="w-5 h-5 text-blue-500 ml-auto" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+              </svg>
+            )}
+          </button>
         ))}
-      </List>
+      </div>
 
-      <Block>
-        <Button
-          large
-          onClick={handleNext}
-          disabled={!selected || loading}
-        >
-          {loading ? "Setting up..." : "Continue"}
-        </Button>
-      </Block>
-    </>
+      <button
+        onClick={handleNext}
+        disabled={!selected || loading}
+        className="w-full py-3.5 rounded-xl bg-blue-500 text-white font-semibold text-[16px] disabled:opacity-50 active:scale-[0.98] transition-all"
+      >
+        {loading ? "Setting up..." : "Continue"}
+      </button>
+    </div>
   );
 }

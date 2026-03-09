@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Button, Block } from "konsta/react";
 
 interface SessionSummaryProps {
   correct: number;
@@ -51,50 +50,58 @@ export default function SessionSummary({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="text-2xl font-bold mb-8"
+        className="text-2xl font-bold mb-2 tracking-tight"
       >
         {message}
       </motion.h1>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="grid grid-cols-4 gap-4 mb-10 w-full max-w-sm"
-      >
-        <div className="text-center">
-          <p className="text-2xl font-bold text-green-500">{correct}</p>
-          <p className="text-xs text-gray-500">Good</p>
-        </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold text-orange-500">{hard}</p>
-          <p className="text-xs text-gray-500">Hard</p>
-        </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold text-red-500">{incorrect}</p>
-          <p className="text-xs text-gray-500">Again</p>
-        </div>
-        <div className="text-center">
-          <p className="text-2xl font-bold">{accuracy}%</p>
-          <p className="text-xs text-gray-500">Score</p>
-        </div>
-      </motion.div>
-
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
+        transition={{ delay: 0.3 }}
         className="text-gray-400 text-sm mb-8"
       >
         {minutes > 0 ? `${minutes}m ` : ""}
         {seconds}s
       </motion.p>
 
-      <Block className="w-full max-w-sm">
-        <Button large onClick={onDone}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+        className="grid grid-cols-4 gap-3 mb-10 w-full max-w-sm"
+      >
+        <div className="bg-green-50 rounded-2xl py-4 text-center">
+          <p className="text-2xl font-bold text-green-600">{correct}</p>
+          <p className="text-[11px] text-green-500 font-medium mt-0.5">Good</p>
+        </div>
+        <div className="bg-orange-50 rounded-2xl py-4 text-center">
+          <p className="text-2xl font-bold text-orange-600">{hard}</p>
+          <p className="text-[11px] text-orange-500 font-medium mt-0.5">Hard</p>
+        </div>
+        <div className="bg-red-50 rounded-2xl py-4 text-center">
+          <p className="text-2xl font-bold text-red-600">{incorrect}</p>
+          <p className="text-[11px] text-red-500 font-medium mt-0.5">Again</p>
+        </div>
+        <div className="bg-gray-50 rounded-2xl py-4 text-center">
+          <p className="text-2xl font-bold text-gray-800">{accuracy}%</p>
+          <p className="text-[11px] text-gray-500 font-medium mt-0.5">Score</p>
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45 }}
+        className="w-full max-w-sm"
+      >
+        <button
+          onClick={onDone}
+          className="w-full py-3.5 rounded-2xl bg-blue-500 text-white font-semibold text-[16px] active:scale-[0.98] transition-all"
+        >
           Done
-        </Button>
-      </Block>
+        </button>
+      </motion.div>
     </div>
   );
 }

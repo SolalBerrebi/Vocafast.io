@@ -7,7 +7,7 @@ import EnvSwitcher from "@/components/ui/EnvSwitcher";
 function DecksIcon({ active }: { active: boolean }) {
   return (
     <svg
-      className={`w-7 h-7 ${active ? "text-blue-500" : "text-gray-400"}`}
+      className={`w-6 h-6 ${active ? "text-blue-500" : "text-gray-400"}`}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -25,7 +25,7 @@ function DecksIcon({ active }: { active: boolean }) {
 function ProgressIcon({ active }: { active: boolean }) {
   return (
     <svg
-      className={`w-7 h-7 ${active ? "text-blue-500" : "text-gray-400"}`}
+      className={`w-6 h-6 ${active ? "text-blue-500" : "text-gray-400"}`}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -43,7 +43,7 @@ function ProgressIcon({ active }: { active: boolean }) {
 function SettingsIcon({ active }: { active: boolean }) {
   return (
     <svg
-      className={`w-7 h-7 ${active ? "text-blue-500" : "text-gray-400"}`}
+      className={`w-6 h-6 ${active ? "text-blue-500" : "text-gray-400"}`}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -68,7 +68,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Don't show tabbar on fullscreen training pages
+  // Don't show tabbar/header on fullscreen training pages
   const isTraining = pathname.startsWith("/train/");
 
   const isDecks = pathname.startsWith("/decks");
@@ -80,14 +80,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <Page>
-      <div className="flex items-center justify-center py-2 border-b border-gray-200 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
+    <Page className="fixed inset-0 flex flex-col">
+      {/* Header with env switcher */}
+      <div className="flex-shrink-0 flex items-center justify-center py-2.5 border-b border-gray-100 bg-white/90 backdrop-blur-xl">
         <EnvSwitcher />
       </div>
 
-      <div className="pb-20">{children}</div>
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20 scrollbar-hide">
+        {children}
+      </div>
 
-      <Tabbar className="fixed bottom-0 left-0 right-0">
+      {/* Bottom tab bar */}
+      <Tabbar className="fixed bottom-0 left-0 right-0 border-t border-gray-100 bg-white/90 backdrop-blur-xl">
         <TabbarLink
           active={isDecks}
           onClick={() => router.push("/decks")}

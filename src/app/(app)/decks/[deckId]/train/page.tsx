@@ -2,19 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  Navbar,
-  NavbarBackLink,
-  Block,
-  Button,
-  Preloader,
-  List,
-  ListItem,
-  Radio,
-  BlockTitle,
-  Segmented,
-  SegmentedButton,
-} from "konsta/react";
+import { Preloader } from "konsta/react";
 import { createClient } from "@/lib/supabase/client";
 import { useEnvironmentStore } from "@/stores/environment-store";
 import { useTrainingStore } from "@/stores/training-store";
@@ -23,6 +11,19 @@ import type { StudyScope } from "@/lib/srs/scheduler";
 import type { Deck, TrainingMode, Word } from "@/types/database";
 
 const SESSION_SIZES = [5, 10, 15, 20];
+
+const SCOPES: { key: StudyScope; label: string; desc: string; icon: string }[] = [
+  { key: "smart", label: "Smart Review", desc: "Due + new words (SRS)", icon: "🧠" },
+  { key: "all", label: "All Words", desc: "Practice everything", icon: "📚" },
+  { key: "mistakes", label: "Difficult Words", desc: "Words you've struggled with", icon: "💪" },
+  { key: "new_only", label: "New Only", desc: "Unreviewed words", icon: "✨" },
+];
+
+const MODES: { key: TrainingMode; label: string; desc: string; icon: string }[] = [
+  { key: "flashcard", label: "Flashcards", desc: "Flip to reveal", icon: "🃏" },
+  { key: "multiple_choice", label: "Multiple Choice", desc: "Pick the correct answer", icon: "📝" },
+  { key: "typing", label: "Typing", desc: "Type the translation", icon: "⌨️" },
+];
 
 export default function TrainLauncherPage() {
   const { deckId } = useParams<{ deckId: string }>();
@@ -53,7 +54,6 @@ export default function TrainLauncherPage() {
     fetchData();
   }, [fetchData]);
 
-  // Auto-select best scope
   useEffect(() => {
     if (stats.due > 0 || stats.newCount > 0) {
       setScope("smart");
@@ -61,19 +61,6 @@ export default function TrainLauncherPage() {
       setScope("all");
     }
   }, [stats]);
-
-  const scopeDescription = () => {
-    switch (scope) {
-      case "smart":
-        return `${stats.due} due + ${stats.newCount} new words`;
-      case "all":
-        return `Practice any of your ${stats.total} words`;
-      case "mistakes":
-        return "Words you've struggled with";
-      case "new_only":
-        return `${stats.newCount} words not yet studied`;
-    }
-  };
 
   const handleStart = async () => {
     if (!activeEnvironmentId || stats.total === 0) return;
@@ -86,7 +73,6 @@ export default function TrainLauncherPage() {
       return;
     }
 
-    // Create session in DB
     const { data: session } = await supabase
       .from("training_sessions")
       .insert({
@@ -102,7 +88,6 @@ export default function TrainLauncherPage() {
       return;
     }
 
-    // Build cards with options for multiple choice
     const cards = availableWords.map((word: Word) => {
       if (mode === "multiple_choice") {
         const others = availableWords
@@ -123,170 +108,134 @@ export default function TrainLauncherPage() {
 
   if (loading) {
     return (
-      <>
-        <Navbar
-          title="Train"
-          left={<NavbarBackLink onClick={() => router.back()} />}
-        />
-        <Block className="text-center mt-16">
+      <div className="px-5 pt-2 pb-8">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1 text-blue-500 font-medium text-[15px] py-2 -ml-1 mb-4"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+        <div className="flex justify-center mt-16">
           <Preloader />
-        </Block>
-      </>
+        </div>
+      </div>
     );
   }
 
   return (
-    <>
-      <Navbar
-        title={deck?.name ?? "Train"}
-        left={<NavbarBackLink onClick={() => router.back()} />}
-      />
+    <div className="px-5 pt-2 pb-8">
+      {/* Back button */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-1 text-blue-500 font-medium text-[15px] py-2 -ml-1 mb-3"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </button>
+
+      <h1 className="text-2xl font-bold tracking-tight mb-5">{deck?.name ?? "Train"}</h1>
 
       {/* Deck stats */}
-      <Block>
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div className="bg-blue-50 rounded-2xl p-3">
-            <p className="text-xl font-bold text-blue-600">{stats.due}</p>
-            <p className="text-[10px] text-blue-400 font-medium">Due</p>
-          </div>
-          <div className="bg-purple-50 rounded-2xl p-3">
-            <p className="text-xl font-bold text-purple-600">{stats.newCount}</p>
-            <p className="text-[10px] text-purple-400 font-medium">New</p>
-          </div>
-          <div className="bg-orange-50 rounded-2xl p-3">
-            <p className="text-xl font-bold text-orange-600">{stats.learning}</p>
-            <p className="text-[10px] text-orange-400 font-medium">Learning</p>
-          </div>
-          <div className="bg-green-50 rounded-2xl p-3">
-            <p className="text-xl font-bold text-green-600">{stats.mastered}</p>
-            <p className="text-[10px] text-green-400 font-medium">Mastered</p>
-          </div>
+      <div className="grid grid-cols-4 gap-2 mb-6">
+        <div className="bg-blue-50 rounded-2xl py-3 text-center">
+          <p className="text-lg font-bold text-blue-600">{stats.due}</p>
+          <p className="text-[10px] text-blue-400 font-semibold">Due</p>
         </div>
-      </Block>
+        <div className="bg-purple-50 rounded-2xl py-3 text-center">
+          <p className="text-lg font-bold text-purple-600">{stats.newCount}</p>
+          <p className="text-[10px] text-purple-400 font-semibold">New</p>
+        </div>
+        <div className="bg-orange-50 rounded-2xl py-3 text-center">
+          <p className="text-lg font-bold text-orange-600">{stats.learning}</p>
+          <p className="text-[10px] text-orange-400 font-semibold">Learning</p>
+        </div>
+        <div className="bg-green-50 rounded-2xl py-3 text-center">
+          <p className="text-lg font-bold text-green-600">{stats.mastered}</p>
+          <p className="text-[10px] text-green-400 font-semibold">Mastered</p>
+        </div>
+      </div>
 
       {/* Study scope */}
-      <BlockTitle>What to study</BlockTitle>
-      <List strongIos insetIos>
-        <ListItem
-          title="Smart Review"
-          subtitle="Due words + new words (SRS)"
-          media={<span className="text-lg">🧠</span>}
-          after={
-            <Radio
-              checked={scope === "smart"}
-              onChange={() => setScope("smart")}
-            />
-          }
-          onClick={() => setScope("smart")}
-        />
-        <ListItem
-          title="All Words"
-          subtitle="Practice everything in this deck"
-          media={<span className="text-lg">📚</span>}
-          after={
-            <Radio
-              checked={scope === "all"}
-              onChange={() => setScope("all")}
-            />
-          }
-          onClick={() => setScope("all")}
-        />
-        <ListItem
-          title="Difficult Words"
-          subtitle="Words you've struggled with"
-          media={<span className="text-lg">💪</span>}
-          after={
-            <Radio
-              checked={scope === "mistakes"}
-              onChange={() => setScope("mistakes")}
-            />
-          }
-          onClick={() => setScope("mistakes")}
-        />
-        <ListItem
-          title="New Only"
-          subtitle="Only unreviewed words"
-          media={<span className="text-lg">✨</span>}
-          after={
-            <Radio
-              checked={scope === "new_only"}
-              onChange={() => setScope("new_only")}
-            />
-          }
-          onClick={() => setScope("new_only")}
-        />
-      </List>
+      <h2 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 px-1">What to study</h2>
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-100 mb-6">
+        {SCOPES.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setScope(s.key)}
+            className={`w-full px-4 py-3.5 flex items-center gap-3 transition-colors ${
+              scope === s.key ? "bg-blue-50/50" : "active:bg-gray-50"
+            }`}
+          >
+            <span className="text-lg">{s.icon}</span>
+            <div className="flex-1 text-left">
+              <p className={`text-[15px] font-medium ${scope === s.key ? "text-blue-600" : "text-gray-800"}`}>{s.label}</p>
+              <p className="text-[12px] text-gray-400">{s.desc}</p>
+            </div>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+              scope === s.key ? "border-blue-500" : "border-gray-300"
+            }`}>
+              {scope === s.key && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+            </div>
+          </button>
+        ))}
+      </div>
 
       {/* Training mode */}
-      <BlockTitle>How to study</BlockTitle>
-      <List strongIos insetIos>
-        <ListItem
-          title="Flashcards"
-          subtitle="Flip to reveal translation"
-          media={<span className="text-lg">🃏</span>}
-          after={
-            <Radio
-              checked={mode === "flashcard"}
-              onChange={() => setMode("flashcard")}
-            />
-          }
-          onClick={() => setMode("flashcard")}
-        />
-        <ListItem
-          title="Multiple Choice"
-          subtitle="Pick the correct translation"
-          media={<span className="text-lg">📝</span>}
-          after={
-            <Radio
-              checked={mode === "multiple_choice"}
-              onChange={() => setMode("multiple_choice")}
-            />
-          }
-          onClick={() => setMode("multiple_choice")}
-        />
-        <ListItem
-          title="Typing"
-          subtitle="Type the translation"
-          media={<span className="text-lg">⌨️</span>}
-          after={
-            <Radio
-              checked={mode === "typing"}
-              onChange={() => setMode("typing")}
-            />
-          }
-          onClick={() => setMode("typing")}
-        />
-      </List>
+      <h2 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 px-1">How to study</h2>
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-100 mb-6">
+        {MODES.map((m) => (
+          <button
+            key={m.key}
+            onClick={() => setMode(m.key)}
+            className={`w-full px-4 py-3.5 flex items-center gap-3 transition-colors ${
+              mode === m.key ? "bg-blue-50/50" : "active:bg-gray-50"
+            }`}
+          >
+            <span className="text-lg">{m.icon}</span>
+            <div className="flex-1 text-left">
+              <p className={`text-[15px] font-medium ${mode === m.key ? "text-blue-600" : "text-gray-800"}`}>{m.label}</p>
+              <p className="text-[12px] text-gray-400">{m.desc}</p>
+            </div>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+              mode === m.key ? "border-blue-500" : "border-gray-300"
+            }`}>
+              {mode === m.key && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+            </div>
+          </button>
+        ))}
+      </div>
 
       {/* Session size */}
-      <BlockTitle>Session size</BlockTitle>
-      <Block>
-        <Segmented strong>
-          {SESSION_SIZES.map((size) => (
-            <SegmentedButton
-              key={size}
-              active={sessionSize === size}
-              onClick={() => setSessionSize(size)}
-            >
-              {size}
-            </SegmentedButton>
-          ))}
-        </Segmented>
-      </Block>
+      <h2 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 px-1">Session size</h2>
+      <div className="flex gap-2 mb-8">
+        {SESSION_SIZES.map((size) => (
+          <button
+            key={size}
+            onClick={() => setSessionSize(size)}
+            className={`flex-1 py-2.5 rounded-xl text-[14px] font-semibold transition-all ${
+              sessionSize === size
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-600 active:bg-gray-200"
+            }`}
+          >
+            {size}
+          </button>
+        ))}
+      </div>
 
       {/* Start */}
-      <Block>
-        <p className="text-center text-sm text-gray-400 mb-3">
-          {scopeDescription()}
-        </p>
-        <Button
-          large
-          onClick={handleStart}
-          disabled={stats.total === 0 || starting}
-        >
-          {starting ? "Starting..." : "Start Training"}
-        </Button>
-      </Block>
-    </>
+      <button
+        onClick={handleStart}
+        disabled={stats.total === 0 || starting}
+        className="w-full py-3.5 rounded-xl bg-blue-500 text-white font-semibold text-[16px] disabled:opacity-50 active:scale-[0.98] transition-all"
+      >
+        {starting ? "Starting..." : "Start Training"}
+      </button>
+    </div>
   );
 }

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, nativeLang, targetLang } = await request.json();
+    const { topic, nativeLang, targetLang, existingWords } = await request.json();
 
     if (!topic || !targetLang || !nativeLang) {
       return NextResponse.json(
@@ -50,6 +50,11 @@ export async function POST(request: NextRequest) {
     const targetName = getLangName(targetLang);
     const nativeName = getLangName(nativeLang);
 
+    const excludeClause =
+      existingWords && existingWords.length > 0
+        ? `\n- Do NOT include any of these words (the user already has them): ${existingWords.join(", ")}`
+        : "";
+
     const prompt = `You are a vocabulary teacher. Generate 12-15 useful vocabulary words for the topic: "${topic}".
 
 The words should be in ${targetName} with translations in ${nativeName}.
@@ -58,7 +63,7 @@ Rules:
 - Choose practical, commonly-used words for this topic
 - Include a mix of nouns, verbs, and adjectives when relevant
 - Words should be appropriate for a language learner (not too obscure)
-- For ${targetName}, use the most common/standard form of each word
+- For ${targetName}, use the most common/standard form of each word${excludeClause}
 
 Return ONLY a valid JSON array with no other text, no markdown, no code fences.
 Each element must have "word" (in ${targetName}) and "translation" (in ${nativeName}) fields.

@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  Navbar,
-  NavbarBackLink,
   Block,
   List,
   ListInput,
@@ -15,7 +13,6 @@ import {
   Checkbox,
 } from "konsta/react";
 import { createClient } from "@/lib/supabase/client";
-import { useEnvironment } from "@/hooks/useEnvironment";
 import { TOPICS } from "@/lib/ai/topics";
 import type { WordSourceType } from "@/types/database";
 
@@ -28,8 +25,8 @@ interface ExtractedWord {
 export default function AddWordsPage() {
   const { deckId } = useParams<{ deckId: string }>();
   const router = useRouter();
-  const { activeEnvironment } = useEnvironment();
   const [nativeLang, setNativeLang] = useState("en");
+  const [targetLang, setTargetLang] = useState("");
 
   // Manual entry state
   const [word, setWord] = useState("");
@@ -62,20 +59,36 @@ export default function AddWordsPage() {
   // Active tab
   const [activeTab, setActiveTab] = useState<"manual" | "photo" | "text" | "topic">("manual");
 
+  // Existing words in deck (for dedup)
+  const [existingWords, setExistingWords] = useState<string[]>([]);
+
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("native_lang")
-        .eq("id", user.id)
-        .single();
-      if (data) setNativeLang(data.native_lang);
+
+      const [profileRes, wordsRes, deckRes] = await Promise.all([
+        supabase.from("profiles").select("native_lang").eq("id", user.id).single(),
+        supabase.from("words").select("word").eq("deck_id", deckId),
+        supabase.from("decks").select("environment_id").eq("id", deckId).single(),
+      ]);
+
+      if (profileRes.data) setNativeLang(profileRes.data.native_lang);
+      if (wordsRes.data) setExistingWords(wordsRes.data.map((w) => w.word.toLowerCase()));
+
+      // Get the target language from the deck's own environment (not the global active one)
+      if (deckRes.data) {
+        const { data: envData } = await supabase
+          .from("language_environments")
+          .select("target_lang")
+          .eq("id", deckRes.data.environment_id)
+          .single();
+        if (envData) setTargetLang(envData.target_lang);
+      }
     };
-    fetchProfile();
-  }, []);
+    fetchData();
+  }, [deckId]);
 
   const handleAdd = async () => {
     if (!word.trim() || !translation.trim()) return;
@@ -95,6 +108,7 @@ export default function AddWordsPage() {
         { word: word.trim(), translation: translation.trim() },
         ...prev,
       ]);
+      setExistingWords((prev) => [...prev, word.trim().toLowerCase()]);
       setWord("");
       setTranslation("");
       setContext("");
@@ -137,7 +151,7 @@ export default function AddWordsPage() {
 
   // CAPT-04 to CAPT-07: Photo capture & Gemini Vision extraction
   const handlePhotoSelected = async (file: File) => {
-    if (!activeEnvironment) return;
+    if (!targetLang) return;
 
     setPhotoProcessing(true);
     setPhotoProgress("Preparing image...");
@@ -157,7 +171,7 @@ export default function AddWordsPage() {
         body: JSON.stringify({
           imageBase64: base64,
           mimeType,
-          targetLang: activeEnvironment.target_lang,
+          targetLang: targetLang,
           nativeLang,
         }),
       });
@@ -222,6 +236,7 @@ export default function AddWordsPage() {
         ...selected.map((w) => ({ word: w.word, translation: w.translation })),
         ...prev,
       ]);
+      setExistingWords((prev) => [...prev, ...selected.map((w) => w.word.toLowerCase())]);
       setPhotoWords([]);
       setPhotoPreview(null);
     }
@@ -229,7 +244,7 @@ export default function AddWordsPage() {
 
   // CAPT-01: Text extraction
   const handleExtract = async () => {
-    if (!textInput.trim() || !activeEnvironment) return;
+    if (!textInput.trim() || !targetLang) return;
     setExtracting(true);
     try {
       const res = await fetch("/api/ai/extract-vocabulary", {
@@ -238,7 +253,7 @@ export default function AddWordsPage() {
         body: JSON.stringify({
           text: textInput.trim(),
           sourceLang: nativeLang,
-          targetLang: activeEnvironment.target_lang,
+          targetLang: targetLang,
         }),
       });
       const data = await res.json();
@@ -274,6 +289,11 @@ export default function AddWordsPage() {
         ...selected.map((w) => ({ word: w.word, translation: w.translation })),
         ...prev,
       ]);
+      // Track newly added words to prevent future duplicates
+      setExistingWords((prev) => [
+        ...prev,
+        ...selected.map((w) => w.word.toLowerCase()),
+      ]);
       if (sourceType === "text") {
         setExtracted([]);
         setTextInput("");
@@ -286,7 +306,7 @@ export default function AddWordsPage() {
 
   // Topic generation (predefined or custom)
   const handleGenerateTopic = async (topicName: string) => {
-    if (!activeEnvironment) return;
+    if (!targetLang) return;
     setSelectedTopic(topicName);
     setGeneratingTopic(true);
     setTopicError("");
@@ -297,17 +317,26 @@ export default function AddWordsPage() {
         body: JSON.stringify({
           topic: topicName,
           nativeLang,
-          targetLang: activeEnvironment.target_lang,
+          targetLang: targetLang,
+          existingWords: existingWords.slice(0, 100),
         }),
       });
       const data = await res.json();
       if (data.error) {
         setTopicError(data.error);
       } else if (data.words && data.words.length > 0) {
-        setTopicWords(data.words.map((w: { word: string; translation: string }) => ({
-          ...w,
-          selected: true,
-        })));
+        // Filter out words already in the deck (client-side safety net)
+        const filtered = data.words.filter(
+          (w: { word: string }) => !existingWords.includes(w.word.toLowerCase()),
+        );
+        if (filtered.length > 0) {
+          setTopicWords(filtered.map((w: { word: string; translation: string }) => ({
+            ...w,
+            selected: true,
+          })));
+        } else {
+          setTopicError("All generated words are already in your deck. Try a different topic.");
+        }
       } else {
         setTopicError("No words generated. Try a different topic.");
       }
@@ -327,27 +356,37 @@ export default function AddWordsPage() {
 
   return (
     <>
-      <Navbar
-        title="Add Words"
-        left={<NavbarBackLink onClick={() => router.back()} />}
-      />
+      <div className="px-5 pt-2 pb-2">
+        {/* Back button */}
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1 text-blue-500 font-medium text-[15px] py-2 -ml-1 mb-3"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
 
-      {/* Tab selector */}
-      <Block className="flex gap-1 bg-gray-100 rounded-xl p-1">
-        {(["manual", "photo", "text", "topic"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-colors ${
-              activeTab === tab
-                ? "bg-white text-black shadow-sm"
-                : "text-gray-500"
-            }`}
-          >
-            {tab === "manual" ? "Manual" : tab === "photo" ? "Photo" : tab === "text" ? "Text" : "Topics"}
-          </button>
-        ))}
-      </Block>
+        <h1 className="text-2xl font-bold tracking-tight mb-4">Add Words</h1>
+
+        {/* Tab selector */}
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-1">
+          {(["manual", "photo", "text", "topic"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2 px-2 rounded-lg text-[12px] font-semibold transition-all ${
+                activeTab === tab
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500"
+              }`}
+            >
+              {tab === "manual" ? "Manual" : tab === "photo" ? "Photo" : tab === "text" ? "Text" : "Topics"}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Manual Entry */}
       {activeTab === "manual" && (
@@ -539,7 +578,7 @@ export default function AddWordsPage() {
         <>
           <Block>
             <textarea
-              className="w-full h-32 p-3 border border-gray-300 rounded-xl text-base resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full h-32 p-3.5 border border-gray-200 bg-gray-50 rounded-xl text-[16px] resize-none focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
               placeholder="Paste or type words here (one per line, or separated by commas)..."
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
@@ -615,7 +654,7 @@ export default function AddWordsPage() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-4 py-2.5 border border-gray-200 bg-gray-50 rounded-xl text-[16px] focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
                     placeholder="e.g. cooking, animals, at the airport..."
                     value={customTopic}
                     onChange={(e) => setCustomTopic(e.target.value)}
