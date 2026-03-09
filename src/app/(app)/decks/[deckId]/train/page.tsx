@@ -11,12 +11,18 @@ import {
   List,
   ListItem,
   Radio,
+  BlockTitle,
+  Segmented,
+  SegmentedButton,
 } from "konsta/react";
 import { createClient } from "@/lib/supabase/client";
 import { useEnvironmentStore } from "@/stores/environment-store";
 import { useTrainingStore } from "@/stores/training-store";
-import { buildTrainingQueue } from "@/lib/srs/scheduler";
+import { buildTrainingQueue, getDeckStats } from "@/lib/srs/scheduler";
+import type { StudyScope } from "@/lib/srs/scheduler";
 import type { Deck, TrainingMode, Word } from "@/types/database";
+
+const SESSION_SIZES = [5, 10, 15, 20];
 
 export default function TrainLauncherPage() {
   const { deckId } = useParams<{ deckId: string }>();
@@ -26,21 +32,20 @@ export default function TrainLauncherPage() {
   const startSession = useTrainingStore((s) => s.startSession);
 
   const [deck, setDeck] = useState<Deck | null>(null);
-  const [availableWords, setAvailableWords] = useState<Word[]>([]);
+  const [stats, setStats] = useState({ total: 0, due: 0, newCount: 0, learning: 0, mastered: 0 });
   const [mode, setMode] = useState<TrainingMode>("flashcard");
+  const [scope, setScope] = useState<StudyScope>("smart");
+  const [sessionSize, setSessionSize] = useState(20);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
 
   const fetchData = useCallback(async () => {
-    const { data: deckData } = await supabase
-      .from("decks")
-      .select("*")
-      .eq("id", deckId)
-      .single();
-    setDeck(deckData as Deck | null);
-
-    const words = await buildTrainingQueue(deckId);
-    setAvailableWords(words);
+    const [deckRes, deckStats] = await Promise.all([
+      supabase.from("decks").select("*").eq("id", deckId).single(),
+      getDeckStats(deckId),
+    ]);
+    setDeck(deckRes.data as Deck | null);
+    setStats(deckStats);
     setLoading(false);
   }, [deckId, supabase]);
 
@@ -48,9 +53,38 @@ export default function TrainLauncherPage() {
     fetchData();
   }, [fetchData]);
 
+  // Auto-select best scope
+  useEffect(() => {
+    if (stats.due > 0 || stats.newCount > 0) {
+      setScope("smart");
+    } else if (stats.total > 0) {
+      setScope("all");
+    }
+  }, [stats]);
+
+  const scopeDescription = () => {
+    switch (scope) {
+      case "smart":
+        return `${stats.due} due + ${stats.newCount} new words`;
+      case "all":
+        return `Practice any of your ${stats.total} words`;
+      case "mistakes":
+        return "Words you've struggled with";
+      case "new_only":
+        return `${stats.newCount} words not yet studied`;
+    }
+  };
+
   const handleStart = async () => {
-    if (!activeEnvironmentId || availableWords.length === 0) return;
+    if (!activeEnvironmentId || stats.total === 0) return;
     setStarting(true);
+
+    const availableWords = await buildTrainingQueue(deckId, scope, sessionSize);
+
+    if (availableWords.length === 0) {
+      setStarting(false);
+      return;
+    }
 
     // Create session in DB
     const { data: session } = await supabase
@@ -69,12 +103,11 @@ export default function TrainLauncherPage() {
     }
 
     // Build cards with options for multiple choice
-    const cards = availableWords.map((word) => {
+    const cards = availableWords.map((word: Word) => {
       if (mode === "multiple_choice") {
         const others = availableWords
-          .filter((w) => w.id !== word.id)
-          .map((w) => w.translation);
-        // Shuffle and take 3 distractors
+          .filter((w: Word) => w.id !== word.id)
+          .map((w: Word) => w.translation);
         const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
         const options = [...shuffled, word.translation].sort(
           () => Math.random() - 0.5,
@@ -109,21 +142,88 @@ export default function TrainLauncherPage() {
         left={<NavbarBackLink onClick={() => router.back()} />}
       />
 
-      <Block className="text-center mt-4">
-        <div className="text-5xl mb-3">🧠</div>
-        <h2 className="text-xl font-bold">
-          {availableWords.length} words to review
-        </h2>
-        <p className="text-gray-500 text-sm mt-1">
-          Choose your training mode
-        </p>
+      {/* Deck stats */}
+      <Block>
+        <div className="grid grid-cols-4 gap-2 text-center">
+          <div className="bg-blue-50 rounded-2xl p-3">
+            <p className="text-xl font-bold text-blue-600">{stats.due}</p>
+            <p className="text-[10px] text-blue-400 font-medium">Due</p>
+          </div>
+          <div className="bg-purple-50 rounded-2xl p-3">
+            <p className="text-xl font-bold text-purple-600">{stats.newCount}</p>
+            <p className="text-[10px] text-purple-400 font-medium">New</p>
+          </div>
+          <div className="bg-orange-50 rounded-2xl p-3">
+            <p className="text-xl font-bold text-orange-600">{stats.learning}</p>
+            <p className="text-[10px] text-orange-400 font-medium">Learning</p>
+          </div>
+          <div className="bg-green-50 rounded-2xl p-3">
+            <p className="text-xl font-bold text-green-600">{stats.mastered}</p>
+            <p className="text-[10px] text-green-400 font-medium">Mastered</p>
+          </div>
+        </div>
       </Block>
 
+      {/* Study scope */}
+      <BlockTitle>What to study</BlockTitle>
+      <List strongIos insetIos>
+        <ListItem
+          title="Smart Review"
+          subtitle="Due words + new words (SRS)"
+          media={<span className="text-lg">🧠</span>}
+          after={
+            <Radio
+              checked={scope === "smart"}
+              onChange={() => setScope("smart")}
+            />
+          }
+          onClick={() => setScope("smart")}
+        />
+        <ListItem
+          title="All Words"
+          subtitle="Practice everything in this deck"
+          media={<span className="text-lg">📚</span>}
+          after={
+            <Radio
+              checked={scope === "all"}
+              onChange={() => setScope("all")}
+            />
+          }
+          onClick={() => setScope("all")}
+        />
+        <ListItem
+          title="Difficult Words"
+          subtitle="Words you've struggled with"
+          media={<span className="text-lg">💪</span>}
+          after={
+            <Radio
+              checked={scope === "mistakes"}
+              onChange={() => setScope("mistakes")}
+            />
+          }
+          onClick={() => setScope("mistakes")}
+        />
+        <ListItem
+          title="New Only"
+          subtitle="Only unreviewed words"
+          media={<span className="text-lg">✨</span>}
+          after={
+            <Radio
+              checked={scope === "new_only"}
+              onChange={() => setScope("new_only")}
+            />
+          }
+          onClick={() => setScope("new_only")}
+        />
+      </List>
+
+      {/* Training mode */}
+      <BlockTitle>How to study</BlockTitle>
       <List strongIos insetIos>
         <ListItem
           title="Flashcards"
           subtitle="Flip to reveal translation"
-          media={<span className="text-xl">🃏</span>}
+          media={<span className="text-lg">🃏</span>}
           after={
             <Radio
               checked={mode === "flashcard"}
@@ -135,7 +235,7 @@ export default function TrainLauncherPage() {
         <ListItem
           title="Multiple Choice"
           subtitle="Pick the correct translation"
-          media={<span className="text-xl">📝</span>}
+          media={<span className="text-lg">📝</span>}
           after={
             <Radio
               checked={mode === "multiple_choice"}
@@ -147,7 +247,7 @@ export default function TrainLauncherPage() {
         <ListItem
           title="Typing"
           subtitle="Type the translation"
-          media={<span className="text-xl">⌨️</span>}
+          media={<span className="text-lg">⌨️</span>}
           after={
             <Radio
               checked={mode === "typing"}
@@ -158,11 +258,31 @@ export default function TrainLauncherPage() {
         />
       </List>
 
+      {/* Session size */}
+      <BlockTitle>Session size</BlockTitle>
       <Block>
+        <Segmented strong>
+          {SESSION_SIZES.map((size) => (
+            <SegmentedButton
+              key={size}
+              active={sessionSize === size}
+              onClick={() => setSessionSize(size)}
+            >
+              {size}
+            </SegmentedButton>
+          ))}
+        </Segmented>
+      </Block>
+
+      {/* Start */}
+      <Block>
+        <p className="text-center text-sm text-gray-400 mb-3">
+          {scopeDescription()}
+        </p>
         <Button
           large
           onClick={handleStart}
-          disabled={availableWords.length === 0 || starting}
+          disabled={stats.total === 0 || starting}
         >
           {starting ? "Starting..." : "Start Training"}
         </Button>
