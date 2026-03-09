@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Navbar,
@@ -43,13 +43,21 @@ export default function AddWordsPage() {
   const [extracting, setExtracting] = useState(false);
   const [extracted, setExtracted] = useState<ExtractedWord[]>([]);
 
+  // Photo capture state (CAPT-04 to CAPT-07)
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+  const [photoProgress, setPhotoProgress] = useState("");
+  const [photoWords, setPhotoWords] = useState<ExtractedWord[]>([]);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
   // Topic generation state
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [generatingTopic, setGeneratingTopic] = useState(false);
   const [topicWords, setTopicWords] = useState<ExtractedWord[]>([]);
 
   // Active tab
-  const [activeTab, setActiveTab] = useState<"manual" | "text" | "topic">("manual");
+  const [activeTab, setActiveTab] = useState<"manual" | "photo" | "text" | "topic">("manual");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -89,6 +97,124 @@ export default function AddWordsPage() {
       setContext("");
     }
     setLoading(false);
+  };
+
+  // CAPT-04 to CAPT-07: Photo capture & OCR
+  const handlePhotoSelected = async (file: File) => {
+    if (!activeEnvironment) return;
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => setPhotoPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+
+    setPhotoProcessing(true);
+    setPhotoProgress("Loading OCR engine...");
+    setPhotoWords([]);
+
+    try {
+      // Dynamically import Tesseract.js (heavy library, load on demand)
+      const Tesseract = await import("tesseract.js");
+
+      // Determine OCR language based on target language
+      const langMap: Record<string, string> = {
+        he: "heb",
+        ar: "ara",
+        en: "eng",
+        fr: "fra",
+        es: "spa",
+        de: "deu",
+        it: "ita",
+        pt: "por",
+        ja: "jpn",
+        ko: "kor",
+        zh: "chi_sim",
+        ru: "rus",
+        hi: "hin",
+        nl: "nld",
+        sv: "swe",
+        pl: "pol",
+        tr: "tur",
+      };
+
+      const ocrLang = langMap[activeEnvironment.target_lang] || "eng";
+      // Use both target and native language for better recognition of bilingual tables
+      const nativeOcrLang = langMap[nativeLang] || "eng";
+      const ocrLangs = ocrLang === nativeOcrLang ? ocrLang : `${ocrLang}+${nativeOcrLang}`;
+
+      setPhotoProgress("Recognizing text...");
+
+      const result = await Tesseract.recognize(file, ocrLangs, {
+        logger: (m) => {
+          if (m.status === "recognizing text") {
+            const pct = Math.round((m.progress ?? 0) * 100);
+            setPhotoProgress(`Recognizing text... ${pct}%`);
+          }
+        },
+      });
+
+      const ocrText = result.data.text;
+
+      if (!ocrText.trim()) {
+        setPhotoProgress("No text found in image. Try a clearer photo.");
+        setPhotoProcessing(false);
+        return;
+      }
+
+      setPhotoProgress("Extracting word pairs...");
+
+      // Send OCR text to API for parsing and translation
+      const res = await fetch("/api/ai/extract-from-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ocrText,
+          targetLang: activeEnvironment.target_lang,
+          nativeLang,
+        }),
+      });
+      const data = await res.json();
+
+      if (data.words && data.words.length > 0) {
+        setPhotoWords(
+          data.words.map((w: { word: string; translation: string }) => ({
+            ...w,
+            selected: true,
+          })),
+        );
+        setPhotoProgress("");
+      } else {
+        setPhotoProgress("No word pairs found. Try a photo with a vocabulary table.");
+      }
+    } catch (err) {
+      console.error("Photo OCR failed:", err);
+      setPhotoProgress("OCR failed. Please try again with a clearer image.");
+    }
+    setPhotoProcessing(false);
+  };
+
+  const handleSavePhotoWords = async () => {
+    const selected = photoWords.filter((w) => w.selected);
+    if (selected.length === 0) return;
+
+    const supabase = createClient();
+    const { error } = await supabase.from("words").insert(
+      selected.map((w) => ({
+        deck_id: deckId,
+        word: w.word,
+        translation: w.translation,
+        source_type: "photo" as WordSourceType,
+      })),
+    );
+
+    if (!error) {
+      setAdded((prev) => [
+        ...selected.map((w) => ({ word: w.word, translation: w.translation })),
+        ...prev,
+      ]);
+      setPhotoWords([]);
+      setPhotoPreview(null);
+    }
   };
 
   // CAPT-01: Text extraction
@@ -176,8 +302,8 @@ export default function AddWordsPage() {
     setGeneratingTopic(false);
   };
 
-  const toggleWord = (index: number, list: "extracted" | "topic") => {
-    const setter = list === "extracted" ? setExtracted : setTopicWords;
+  const toggleWord = (index: number, list: "extracted" | "topic" | "photo") => {
+    const setter = list === "extracted" ? setExtracted : list === "topic" ? setTopicWords : setPhotoWords;
     setter((prev) =>
       prev.map((w, i) => (i === index ? { ...w, selected: !w.selected } : w)),
     );
@@ -192,17 +318,17 @@ export default function AddWordsPage() {
 
       {/* Tab selector */}
       <Block className="flex gap-1 bg-gray-100 rounded-xl p-1">
-        {(["manual", "text", "topic"] as const).map((tab) => (
+        {(["manual", "photo", "text", "topic"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-colors ${
               activeTab === tab
                 ? "bg-white text-black shadow-sm"
                 : "text-gray-500"
             }`}
           >
-            {tab === "manual" ? "Manual" : tab === "text" ? "Paste Text" : "Topics"}
+            {tab === "manual" ? "Manual" : tab === "photo" ? "Photo" : tab === "text" ? "Text" : "Topics"}
           </button>
         ))}
       </Block>
@@ -245,6 +371,143 @@ export default function AddWordsPage() {
               {loading ? "Adding..." : "Add Word"}
             </Button>
           </Block>
+        </>
+      )}
+
+      {/* Photo Capture (CAPT-04 to CAPT-07) */}
+      {activeTab === "photo" && (
+        <>
+          {photoWords.length === 0 ? (
+            <>
+              <Block className="text-center">
+                <p className="text-gray-500 text-sm mb-4">
+                  Take a photo of a vocabulary table from a book or document.
+                  The app will extract words and translations automatically.
+                </p>
+
+                {/* Photo preview */}
+                {photoPreview && (
+                  <div className="mb-4 rounded-2xl overflow-hidden border border-gray-200">
+                    <img
+                      src={photoPreview}
+                      alt="Captured"
+                      className="w-full max-h-64 object-contain bg-gray-50"
+                    />
+                  </div>
+                )}
+
+                {/* Hidden file inputs */}
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePhotoSelected(file);
+                  }}
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePhotoSelected(file);
+                  }}
+                />
+
+                {!photoProcessing ? (
+                  <div className="flex gap-3">
+                    <Button
+                      className="flex-1"
+                      large
+                      onClick={() => cameraInputRef.current?.click()}
+                    >
+                      <span className="flex items-center gap-2 justify-center">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Camera
+                      </span>
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      large
+                      outline
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <span className="flex items-center gap-2 justify-center">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Gallery
+                      </span>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <Preloader />
+                    <p className="text-sm text-gray-500">{photoProgress}</p>
+                  </div>
+                )}
+              </Block>
+            </>
+          ) : (
+            <>
+              {/* Photo review with preview */}
+              {photoPreview && (
+                <Block>
+                  <div className="rounded-2xl overflow-hidden border border-gray-200 mb-2">
+                    <img
+                      src={photoPreview}
+                      alt="Source"
+                      className="w-full max-h-32 object-contain bg-gray-50"
+                    />
+                  </div>
+                </Block>
+              )}
+              <BlockTitle>
+                Review Words ({photoWords.filter((w) => w.selected).length} selected)
+              </BlockTitle>
+              <List strongIos insetIos>
+                {photoWords.map((w, i) => (
+                  <ListItem
+                    key={i}
+                    title={w.word}
+                    after={w.translation}
+                    media={
+                      <Checkbox
+                        checked={w.selected}
+                        onChange={() => toggleWord(i, "photo")}
+                      />
+                    }
+                  />
+                ))}
+              </List>
+              <Block className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={handleSavePhotoWords}
+                >
+                  Save Selected
+                </Button>
+                <Button
+                  className="flex-1"
+                  outline
+                  onClick={() => {
+                    setPhotoWords([]);
+                    setPhotoPreview(null);
+                  }}
+                >
+                  Retake
+                </Button>
+              </Block>
+            </>
+          )}
         </>
       )}
 
