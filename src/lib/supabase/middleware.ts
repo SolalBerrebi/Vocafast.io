@@ -32,7 +32,7 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   const isAuthPage = path.startsWith("/login") || path.startsWith("/signup") || path.startsWith("/callback");
-  const isOnboardingPage = path.startsWith("/native-lang") || path.startsWith("/target-lang") || path.startsWith("/first-deck");
+  const isOnboardingPage = path.startsWith("/add-to-homescreen") || path.startsWith("/native-lang") || path.startsWith("/target-lang") || path.startsWith("/first-deck");
 
   // Not logged in: only allow auth pages
   if (!user && !isAuthPage) {
@@ -51,7 +51,7 @@ export async function updateSession(request: NextRequest) {
       .single();
 
     const url = request.nextUrl.clone();
-    url.pathname = profile?.onboarding_completed ? "/decks" : "/native-lang";
+    url.pathname = profile?.onboarding_completed ? "/decks" : "/add-to-homescreen";
     return NextResponse.redirect(url);
   }
 
