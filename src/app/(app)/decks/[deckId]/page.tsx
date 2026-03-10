@@ -160,10 +160,32 @@ export default function DeckDetailPage() {
           >
             {deck.icon}
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold tracking-tight">{deck.name}</h1>
             <p className="text-[13px] text-gray-400">{words.length} {words.length === 1 ? "word" : "words"}</p>
           </div>
+          {words.length > 0 && (
+            <div className="flex gap-1">
+              <button
+                onClick={() => window.open(`/api/deck/export?deckId=${deckId}&format=csv`, "_blank")}
+                className="p-2 rounded-xl bg-gray-100 active:bg-gray-200 transition-colors"
+                title="Export as TSV"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+              </button>
+              <button
+                onClick={() => window.open(`/api/deck/export?deckId=${deckId}&format=json`, "_blank")}
+                className="p-2 rounded-xl bg-gray-100 active:bg-gray-200 transition-colors"
+                title="Export as Vocafast JSON"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Add words button */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   List,
@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useEnvironment } from "@/hooks/useEnvironment";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
+import { useEnvironmentStore } from "@/stores/environment-store";
 import { getLangName } from "@/components/ui/EnvSwitcher";
 
 const LANGUAGES = [
@@ -67,7 +68,8 @@ function Toggle({
 export default function SettingsPage() {
   const router = useRouter();
   const { user, signOut, updatePassword } = useAuth();
-  const { environments, createEnvironment } = useEnvironment();
+  const { environments, createEnvironment, deleteEnvironment, switchEnvironment } = useEnvironment();
+  const activeEnvironmentId = useEnvironmentStore((s) => s.activeEnvironmentId);
   const { prefs, loading: prefsLoading, updatePrefs, pushPermission, requestPushPermission } =
     useNotificationPreferences();
 
@@ -75,9 +77,18 @@ export default function SettingsPage() {
   const [selectedLang, setSelectedLang] = useState("");
   const [adding, setAdding] = useState(false);
 
+  // Delete language state
+  const [deleteConfirmEnvId, setDeleteConfirmEnvId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Import state
+  const importFileRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ deckName: string; wordCount: number } | null>(null);
+  const [importError, setImportError] = useState("");
+
   // Password change state
   const [passwordSheetOpen, setPasswordSheetOpen] = useState(false);
-  const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [pwError, setPwError] = useState("");
@@ -107,6 +118,57 @@ export default function SettingsPage() {
     setSelectedLang("");
   };
 
+  const handleDeleteLanguage = async () => {
+    if (!deleteConfirmEnvId) return;
+    setDeleting(true);
+
+    // If deleting the active env, switch to another one first
+    if (deleteConfirmEnvId === activeEnvironmentId) {
+      const otherEnv = environments.find((e) => e.id !== deleteConfirmEnvId);
+      if (otherEnv) {
+        await switchEnvironment(otherEnv.id);
+      }
+    }
+
+    await deleteEnvironment(deleteConfirmEnvId);
+    setDeleting(false);
+    setDeleteConfirmEnvId(null);
+  };
+
+  const handleSetDefault = async (envId: string) => {
+    if (envId === activeEnvironmentId) return;
+    await switchEnvironment(envId);
+  };
+
+  const handleImportFile = async (file: File) => {
+    if (!activeEnvironmentId) return;
+    setImporting(true);
+    setImportError("");
+    setImportResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("environmentId", activeEnvironmentId);
+
+      const res = await fetch("/api/deck/import", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        setImportError(data.error || "Import failed");
+      } else {
+        setImportResult({ deckName: data.deckName, wordCount: data.wordCount });
+      }
+    } catch {
+      setImportError("Failed to import file");
+    }
+    setImporting(false);
+  };
+
   const handleChangePassword = async () => {
     setPwError("");
     if (newPw.length < 6) {
@@ -126,7 +188,6 @@ export default function SettingsPage() {
       setTimeout(() => {
         setPasswordSheetOpen(false);
         setPwSuccess(false);
-        setCurrentPw("");
         setNewPw("");
         setConfirmPw("");
       }, 1500);
@@ -160,6 +221,7 @@ export default function SettingsPage() {
   };
 
   const notificationsDisabled = !prefs.notifications_enabled;
+  const deleteEnv = environments.find((e) => e.id === deleteConfirmEnvId);
 
   return (
     <>
@@ -172,7 +234,7 @@ export default function SettingsPage() {
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
             <div className="px-4 py-3.5 flex justify-between items-center">
               <span className="text-[15px] font-medium">Email</span>
-              <span className="text-[14px] text-gray-400">{user?.email ?? "—"}</span>
+              <span className="text-[14px] text-gray-400">{user?.email ?? "---"}</span>
             </div>
             <button
               className="w-full px-4 py-3.5 flex justify-between items-center active:bg-gray-50 transition-colors"
@@ -193,26 +255,111 @@ export default function SettingsPage() {
         {/* Languages */}
         <div className="mb-6">
           <h2 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 px-1">Languages</h2>
+          <p className="text-[12px] text-gray-400 mb-2 px-1">Tap a language to set it as default. Swipe or tap the red button to delete.</p>
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
-            {environments.map((env) => (
-              <div key={env.id} className="px-4 py-3.5 flex items-center gap-3">
-                <span className="text-xl">{env.icon}</span>
-                <span className="text-[15px] font-medium flex-1">{getLangName(env.target_lang)}</span>
-                {env.is_active && (
-                  <span className="text-[12px] font-semibold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">Active</span>
-                )}
-              </div>
-            ))}
+            {environments.map((env) => {
+              const isActive = env.id === activeEnvironmentId;
+              return (
+                <div key={env.id} className="flex items-center">
+                  <button
+                    className="flex-1 px-4 py-3.5 flex items-center gap-3 active:bg-gray-50 transition-colors"
+                    onClick={() => handleSetDefault(env.id)}
+                  >
+                    <span className="text-xl">{env.icon}</span>
+                    <span className="text-[15px] font-medium flex-1 text-left">{getLangName(env.target_lang)}</span>
+                    {isActive && (
+                      <span className="text-[12px] font-semibold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">Default</span>
+                    )}
+                  </button>
+                  {environments.length > 1 && (
+                    <button
+                      className="px-3 py-3.5 text-red-400 active:text-red-600 transition-colors"
+                      onClick={() => setDeleteConfirmEnvId(env.id)}
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
             {availableLanguages.length > 0 && (
               <button
                 className="w-full px-4 py-3.5 flex items-center gap-3 active:bg-gray-50 transition-colors"
                 onClick={() => setAddSheetOpen(true)}
               >
-                <span className="text-xl">➕</span>
+                <span className="text-xl">+</span>
                 <span className="text-[15px] font-medium text-blue-500">Add Language</span>
               </button>
             )}
           </div>
+        </div>
+
+        {/* Import / Export */}
+        <div className="mb-6">
+          <h2 className="text-[13px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5 px-1">Import & Export</h2>
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
+            <button
+              className="w-full px-4 py-3.5 flex items-center gap-3 active:bg-gray-50 transition-colors"
+              onClick={() => {
+                setImportError("");
+                setImportResult(null);
+                importFileRef.current?.click();
+              }}
+              disabled={importing}
+            >
+              <span className="text-xl">📥</span>
+              <div className="flex-1 text-left">
+                <span className="text-[15px] font-medium block">
+                  {importing ? "Importing..." : "Import Deck"}
+                </span>
+                <span className="text-[12px] text-gray-400">CSV, TSV, JSON, or Anki text export</span>
+              </div>
+              <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className="px-4 py-3.5 flex items-center gap-3">
+              <span className="text-xl">📤</span>
+              <div className="flex-1">
+                <span className="text-[15px] font-medium block">Export Deck</span>
+                <span className="text-[12px] text-gray-400">Open a deck and tap the export button</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Hidden file input */}
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".csv,.tsv,.txt,.json,.vocafast.json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImportFile(file);
+              e.target.value = "";
+            }}
+          />
+
+          {importError && (
+            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-[13px] text-red-600">{importError}</p>
+            </div>
+          )}
+          {importResult && (
+            <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-xl">
+              <p className="text-[13px] text-green-700">
+                Imported <strong>{importResult.wordCount}</strong> words into &ldquo;{importResult.deckName}&rdquo;
+              </p>
+              <button
+                className="text-[13px] text-blue-500 font-semibold mt-1"
+                onClick={() => router.push("/decks")}
+              >
+                Go to Decks
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Notifications */}
@@ -454,6 +601,38 @@ export default function SettingsPage() {
             />
           ))}
         </List>
+      </Sheet>
+
+      {/* Delete Language Confirmation Sheet */}
+      <Sheet
+        opened={!!deleteConfirmEnvId}
+        onBackdropClick={() => setDeleteConfirmEnvId(null)}
+        className="pb-safe"
+      >
+        <div className="px-5 py-6 text-center">
+          <div className="text-4xl mb-3">{deleteEnv?.icon ?? "🌍"}</div>
+          <h3 className="text-[17px] font-bold mb-2">
+            Delete {deleteEnv ? getLangName(deleteEnv.target_lang) : ""}?
+          </h3>
+          <p className="text-[14px] text-gray-500 mb-6">
+            This will permanently delete all decks, words, and training history for this language.
+          </p>
+          <div className="flex gap-3">
+            <button
+              className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-semibold text-[15px] active:scale-[0.98] transition-all"
+              onClick={() => setDeleteConfirmEnvId(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-[15px] active:scale-[0.98] transition-all disabled:opacity-50"
+              onClick={handleDeleteLanguage}
+              disabled={deleting}
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </button>
+          </div>
+        </div>
       </Sheet>
 
       {/* Change Password Sheet */}
