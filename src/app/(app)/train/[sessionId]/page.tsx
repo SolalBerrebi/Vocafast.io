@@ -220,7 +220,7 @@ export default function TrainingSessionPage() {
   };
 
   if (!sessionId || cards.length === 0) {
-    router.push("/decks");
+    router.replace("/decks");
     return null;
   }
 

@@ -67,7 +67,8 @@ export default function ProgressPage() {
       sessionDates: [...new Set(sessionDates)],
     });
     setLoading(false);
-  }, [activeEnvironmentId, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeEnvironmentId]);
 
   useEffect(() => {
     setLoading(true);

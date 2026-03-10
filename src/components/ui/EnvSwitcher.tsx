@@ -91,9 +91,9 @@ export default function EnvSwitcher() {
                 onClick={() => {
                   if (env.id !== activeEnvironment.id) {
                     switchEnvironment(env.id);
-                    // Redirect to /decks if viewing a deck-specific page (stale data)
-                    if (pathname.startsWith("/decks/")) {
-                      router.push("/decks");
+                    // Redirect to /decks if on a page with environment-specific data
+                    if (pathname.startsWith("/decks/") || pathname.startsWith("/train/")) {
+                      router.replace("/decks");
                     }
                   }
                   setOpen(false);

@@ -37,7 +37,8 @@ export default function DecksPage() {
     };
 
     fetchDecks();
-  }, [activeEnvironmentId, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeEnvironmentId]);
 
   return (
     <div className="px-4 pt-4 pb-8">
