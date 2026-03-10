@@ -65,7 +65,7 @@ export async function updateSession(request: NextRequest) {
 
     if (profile && !profile.onboarding_completed) {
       const url = request.nextUrl.clone();
-      url.pathname = "/native-lang";
+      url.pathname = "/add-to-homescreen";
       return NextResponse.redirect(url);
     }
   }
