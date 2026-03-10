@@ -31,7 +31,7 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  const isAuthPage = path.startsWith("/login") || path.startsWith("/signup") || path.startsWith("/callback");
+  const isAuthPage = path.startsWith("/login") || path.startsWith("/signup") || path.startsWith("/callback") || path.startsWith("/forgot-password") || path.startsWith("/reset-password");
   const isOnboardingPage = path.startsWith("/add-to-homescreen") || path.startsWith("/native-lang") || path.startsWith("/target-lang") || path.startsWith("/first-deck");
 
   // Not logged in: only allow auth pages
@@ -41,8 +41,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Logged in: redirect away from auth pages
-  if (user && isAuthPage) {
+  // Logged in: redirect away from auth pages (except reset-password which needs auth)
+  if (user && isAuthPage && !path.startsWith("/reset-password")) {
     // Check onboarding status to decide where to send them
     const { data: profile } = await supabase
       .from("profiles")
