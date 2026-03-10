@@ -51,16 +51,24 @@ export async function POST(request: NextRequest) {
     const targetName = getLangName(targetLang);
     const nativeName = getLangName(nativeLang);
 
-    const prompt = `You are a vocabulary extraction assistant. Analyze this image which contains a vocabulary table, word list, or text with words and their translations.
+    const prompt = `You are a vocabulary extraction assistant. Analyze this image which may contain a vocabulary table, word list, flash card, text, signs, labels, or objects.
 
-Extract all word-translation pairs you can find. The words should be in ${targetName} and translations in ${nativeName}.
+Extract all word-translation pairs you can find.
 
-If the image contains a table with columns, extract each row as a pair.
-If the image contains a list of words without translations, provide the ${nativeName} translation for each word.
-If the image contains text/paragraph, extract the key vocabulary words and translate them.
+IMPORTANT RULES:
+- Items may be single words OR multi-word expressions/phrases (e.g. "to take off", "faire la grasse matinée", "להוציא לפועל"). Extract expressions as-is — do NOT split them into individual words.
+- The "word" field must be in ${targetName} (the language being learned). The "translation" field MUST be in ${nativeName} (the user's native language).
+- If a word in the image is already in ${nativeName}, put it in "translation" and provide the ${targetName} equivalent in "word".
+- If the image shows translations in a third language (neither ${targetName} nor ${nativeName}), re-translate so that "translation" is always in ${nativeName}.
+
+Extraction guidelines:
+- If the image contains a table with columns, extract each row as a pair.
+- If the image contains a list of words without translations, provide the ${nativeName} translation for each word.
+- If the image contains text/paragraph, extract the key vocabulary words and expressions, then translate them.
+- If the image shows a flash card with a word or expression, extract it as a single entry.
 
 Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields.
-Example: [{"word":"שלום","translation":"hello"},{"word":"תודה","translation":"thank you"}]
+Example: [{"word":"שלום","translation":"hello"},{"word":"לקחת הפסקה","translation":"to take a break"}]
 
 If you cannot find any words, return an empty array: []`;
 

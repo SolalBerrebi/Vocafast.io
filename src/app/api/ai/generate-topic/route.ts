@@ -58,15 +58,22 @@ export async function POST(request: NextRequest) {
         ? `\n- Do NOT include any of these words (the user already has them): ${existingWords.join(", ")}`
         : "";
 
-    const prompt = `You are a vocabulary teacher. Generate exactly ${count} useful vocabulary words for the topic: "${topic}".
+    const prompt = `You are a vocabulary teacher. Generate exactly ${count} items for the user's request: "${topic}".
 
-The words should be in ${targetName} with translations in ${nativeName}.
+The "word" field must be in ${targetName}. The "translation" field must be in ${nativeName}.
 
-Rules:
-- Choose practical, commonly-used words for this topic
-- Include a mix of nouns, verbs, and adjectives when relevant
-- Words should be appropriate for a language learner (not too obscure)
-- For ${targetName}, use the most common/standard form of each word${excludeClause}
+CRITICAL — Interpret the user's request literally:
+- If the user asks for "irregular verbs", generate actual irregular verbs (e.g. go/went/gone, buy/bought/bought, run/ran/run) — NOT words about grammar or linguistics.
+- If the user asks for "animals", generate actual animal names — NOT words about biology.
+- If the user asks for "emotions", generate actual emotion words (happy, sad, angry) — NOT psychology terms.
+- In short: generate INSTANCES of the category, not META-VOCABULARY about the category.
+- Items can be single words OR multi-word expressions/phrases when natural (e.g. "to get along", "ice cream", "traffic jam").
+
+Additional rules:
+- Choose practical, commonly-used items
+- Items should be appropriate for a language learner (not too obscure)
+- For ${targetName}, use the most common/standard form
+- For verbs, use the infinitive form (e.g. "to go", "aller", "ללכת")${excludeClause}
 
 Return ONLY a valid JSON array with no other text, no markdown, no code fences.
 Each element must have "word" (in ${targetName}) and "translation" (in ${nativeName}) fields.

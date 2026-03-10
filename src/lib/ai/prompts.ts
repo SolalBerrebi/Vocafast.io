@@ -4,19 +4,21 @@ export function extractVocabularyPrompt(
 ): string {
   return `You are a vocabulary extraction assistant. Extract word/translation pairs from the given text.
 
-Source language: ${sourceLang}
-Target language: ${targetLang}
+The user's native language is: ${sourceLang}
+The language they are learning is: ${targetLang}
 
 Rules:
-- Extract individual words or short phrases (2-3 words max)
+- Extract individual words OR multi-word expressions/phrases (e.g. "to get along", "take it easy"). Do NOT split natural expressions into separate words.
 - Provide accurate translations
 - Return ONLY a JSON array of objects with "word" and "translation" keys
-- "word" should be in ${targetLang}, "translation" should be in ${sourceLang}
+- "word" MUST be in ${targetLang}, "translation" MUST be in ${sourceLang}
+- If the input text contains words already in ${sourceLang}, use them as translations and provide the ${targetLang} equivalent as "word"
+- If the input contains translations in a third language (neither ${targetLang} nor ${sourceLang}), re-translate so "translation" is always in ${sourceLang}
 - Deduplicate entries
-- Maximum 20 words per extraction
+- Maximum 20 items per extraction
 
 Example output:
-[{"word": "bonjour", "translation": "hello"}, {"word": "merci", "translation": "thank you"}]`;
+[{"word": "bonjour", "translation": "hello"}, {"word": "faire la queue", "translation": "to stand in line"}]`;
 }
 
 export function conversationSystemPrompt(
@@ -44,12 +46,16 @@ export function imageExtractionPrompt(
   sourceLang: string,
   targetLang: string,
 ): string {
-  return `Analyze this image and extract vocabulary words visible in it (signs, labels, text, objects).
+  return `Analyze this image and extract vocabulary visible in it (signs, labels, text, objects, flash cards, word lists, tables).
 
-For each item you can identify, provide the word in ${targetLang} and its translation in ${sourceLang}.
+IMPORTANT:
+- Items may be single words OR multi-word expressions/phrases (e.g. "to take off", "faire la grasse matinée", "להוציא לפועל"). Extract them as-is, do NOT split expressions into individual words.
+- The "word" field must be in ${targetLang}. The "translation" field MUST be in ${sourceLang}.
+- If a word in the image is already in ${sourceLang} (the user's native language), put it in "translation" and provide the ${targetLang} equivalent in "word".
+- If the image shows translations in a language that is neither ${targetLang} nor ${sourceLang}, re-translate so that "translation" is always in ${sourceLang}.
 
 Return ONLY a JSON array:
 [{"word": "...", "translation": "..."}]
 
-Maximum 15 words. Focus on the most useful vocabulary.`;
+Maximum 15 items. Focus on the most useful vocabulary.`;
 }
