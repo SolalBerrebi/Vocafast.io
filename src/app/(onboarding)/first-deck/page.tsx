@@ -16,9 +16,13 @@ const DECK_PRESETS = [
 export default function FirstDeckPage() {
   const router = useRouter();
   const activeEnvironmentId = useEnvironmentStore((s) => s.activeEnvironmentId);
+  const activeEnv = useEnvironmentStore((s) =>
+    s.environments.find((e) => e.id === s.activeEnvironmentId),
+  );
   const [deckName, setDeckName] = useState("");
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Creating...");
 
   const handleCreate = async () => {
     const name = selectedPreset !== null ? DECK_PRESETS[selectedPreset].name : deckName;
@@ -29,12 +33,64 @@ export default function FirstDeckPage() {
 
     const supabase = createClient();
 
-    await supabase.from("decks").insert({
-      environment_id: activeEnvironmentId,
-      name,
-      icon: preset?.icon ?? "📚",
-      color: preset?.color ?? "#007AFF",
-    });
+    const { data: deck } = await supabase
+      .from("decks")
+      .insert({
+        environment_id: activeEnvironmentId,
+        name,
+        icon: preset?.icon ?? "📚",
+        color: preset?.color ?? "#007AFF",
+      })
+      .select("id")
+      .single();
+
+    // If a preset topic was selected, generate starter words
+    if (preset && deck) {
+      setLoadingMessage("Generating vocabulary...");
+      try {
+        // Fetch native lang from profile
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        const { data: profile } = user
+          ? await supabase
+              .from("profiles")
+              .select("native_lang")
+              .eq("id", user.id)
+              .single()
+          : { data: null };
+
+        const nativeLang = profile?.native_lang ?? "en";
+        const targetLang = activeEnv?.target_lang ?? "en";
+
+        const res = await fetch("/api/ai/generate-topic", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic: preset.name,
+            nativeLang,
+            targetLang,
+            wordCount: 15,
+          }),
+        });
+
+        if (res.ok) {
+          const { words } = await res.json();
+          if (words?.length > 0) {
+            await supabase.from("words").insert(
+              words.map((w: { word: string; translation: string }) => ({
+                deck_id: deck.id,
+                word: w.word,
+                translation: w.translation,
+                source_type: "topic",
+              })),
+            );
+          }
+        }
+      } catch {
+        // Non-blocking: deck is created even if word generation fails
+      }
+    }
 
     const {
       data: { user },
@@ -113,7 +169,7 @@ export default function FirstDeckPage() {
           disabled={(!deckName && selectedPreset === null) || loading}
           className="w-full py-3.5 rounded-xl bg-blue-500 text-white font-semibold text-[16px] disabled:opacity-50 active:scale-[0.98] transition-all"
         >
-          {loading ? "Creating..." : "Create Deck"}
+          {loading ? loadingMessage : "Create Deck"}
         </button>
       </div>
     </div>
