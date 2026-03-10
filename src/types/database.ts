@@ -3,6 +3,11 @@ export interface Profile {
   display_name: string | null;
   native_lang: string;
   onboarding_completed: boolean;
+  total_xp: number;
+  level: number;
+  streak_days: number;
+  last_active_date: string | null;
+  show_timer: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +62,9 @@ export interface TrainingSession {
   incorrect: number;
   started_at: string;
   finished_at: string | null;
+  duration_seconds: number | null;
+  avg_response_time_ms: number | null;
+  xp_earned: number;
 }
 
 export interface ReviewLog {

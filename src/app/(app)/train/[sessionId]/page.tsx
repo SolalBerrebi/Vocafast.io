@@ -1,10 +1,15 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Page } from "konsta/react";
 import { createClient } from "@/lib/supabase/client";
 import { useTrainingStore } from "@/stores/training-store";
+import { useGamificationStore } from "@/stores/gamification-store";
+import { useGamification } from "@/hooks/useGamification";
 import { calculateSRS } from "@/lib/srs/engine";
+import { calculateSessionXP } from "@/lib/gamification/xp-engine";
+import { getLevelForXP, getNextLevel } from "@/lib/gamification/levels";
 import FlashCard from "@/components/training/FlashCard";
 import type { AnswerQuality } from "@/components/training/FlashCard";
 import MultipleChoice from "@/components/training/MultipleChoice";
@@ -18,9 +23,32 @@ const QUALITY_MAP: Record<AnswerQuality, number> = {
   good: 5, // Perfect
 };
 
+function TrainingTimer({ startedAt }: { startedAt: number | null }) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!startedAt) return;
+    setElapsed(Date.now() - startedAt);
+    const interval = setInterval(() => {
+      setElapsed(Date.now() - startedAt);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [startedAt]);
+
+  const min = Math.floor(elapsed / 60000);
+  const sec = Math.floor((elapsed % 60000) / 1000);
+  return (
+    <span className="text-[13px] text-gray-400 font-medium tabular-nums">
+      {min}:{sec.toString().padStart(2, "0")}
+    </span>
+  );
+}
+
 export default function TrainingSessionPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { awardXP, streakDays } = useGamification();
+  const showTimer = useGamificationStore((s) => s.showTimer);
+  const setShowTimer = useGamificationStore((s) => s.setShowTimer);
 
   const {
     sessionId,
@@ -33,12 +61,55 @@ export default function TrainingSessionPage() {
     incorrect,
     startedAt,
     isFinished,
+    responseTimes,
     answerCorrect,
     answerHard,
     answerIncorrect,
     nextCard,
     resetSession,
   } = useTrainingStore();
+
+  // XP calculation — only compute once when session finishes
+  const [xpResult, setXpResult] = useState<{
+    totalXP: number;
+    baseXP: number;
+    speedBonus: number;
+    streakMultiplier: number;
+    completionBonus: number;
+  } | null>(null);
+  const [leveledUp, setLeveledUp] = useState(false);
+  const [newLevelEmoji, setNewLevelEmoji] = useState<string | null>(null);
+  const [newLevelName, setNewLevelName] = useState<string | null>(null);
+  const xpAwarded = useRef(false);
+
+  useEffect(() => {
+    if (!isFinished || xpAwarded.current) return;
+    xpAwarded.current = true;
+
+    const avgResponseTime =
+      responseTimes.length > 0
+        ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+        : 0;
+
+    const result = calculateSessionXP({
+      correct,
+      hard,
+      incorrect,
+      avgResponseTimeMs: avgResponseTime,
+      streakDays,
+    });
+
+    setXpResult(result);
+
+    // Award XP
+    awardXP(result.totalXP).then(({ leveledUp: lu, newLevel }) => {
+      setLeveledUp(lu);
+      if (lu) {
+        setNewLevelEmoji(newLevel.emoji);
+        setNewLevelName(newLevel.name);
+      }
+    });
+  }, [isFinished, correct, hard, incorrect, responseTimes, streakDays, awardXP]);
 
   // Handle flashcard answers with 3 quality levels
   const handleFlashcardAnswer = async (quality: AnswerQuality) => {
@@ -122,12 +193,24 @@ export default function TrainingSessionPage() {
   const handleDone = async () => {
     if (sessionId) {
       const state = useTrainingStore.getState();
+      const durationMs = state.startedAt ? Date.now() - state.startedAt : 0;
+      const avgResponseTime =
+        state.responseTimes.length > 0
+          ? Math.round(
+              state.responseTimes.reduce((a, b) => a + b, 0) /
+                state.responseTimes.length,
+            )
+          : null;
+
       await supabase
         .from("training_sessions")
         .update({
           correct: state.correct,
           incorrect: state.incorrect + state.hard,
           finished_at: new Date().toISOString(),
+          duration_seconds: Math.round(durationMs / 1000),
+          avg_response_time_ms: avgResponseTime,
+          xp_earned: xpResult?.totalXP ?? 0,
         })
         .eq("id", sessionId);
     }
@@ -142,6 +225,13 @@ export default function TrainingSessionPage() {
   }
 
   if (isFinished) {
+    const avgResponseTime =
+      responseTimes.length > 0
+        ? Math.round(
+            responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length,
+          )
+        : 0;
+
     return (
       <Page className="h-screen">
         <SessionSummary
@@ -149,6 +239,14 @@ export default function TrainingSessionPage() {
           hard={hard}
           incorrect={incorrect}
           duration={startedAt ? Date.now() - startedAt : 0}
+          avgResponseTime={avgResponseTime}
+          xpEarned={xpResult?.totalXP ?? 0}
+          xpBase={xpResult?.baseXP ?? 0}
+          xpSpeedBonus={xpResult?.speedBonus ?? 0}
+          xpStreakMultiplier={xpResult?.streakMultiplier ?? 1}
+          leveledUp={leveledUp}
+          newLevelEmoji={newLevelEmoji}
+          newLevelName={newLevelName}
           onDone={handleDone}
         />
       </Page>
@@ -172,9 +270,31 @@ export default function TrainingSessionPage() {
           >
             Quit
           </button>
-          <span className="text-[13px] text-gray-400 font-medium tabular-nums">
-            {currentIndex + 1} / {cards.length}
-          </span>
+          <div className="flex items-center gap-3">
+            {/* Optional timer */}
+            {showTimer && <TrainingTimer startedAt={startedAt} />}
+            <button
+              onClick={() => setShowTimer(!showTimer)}
+              className="p-1 -m-1"
+            >
+              <svg
+                className={`w-4 h-4 ${showTimer ? "text-blue-400" : "text-gray-300"}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </button>
+            <span className="text-[13px] text-gray-400 font-medium tabular-nums">
+              {currentIndex + 1} / {cards.length}
+            </span>
+          </div>
         </div>
         <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
           <div

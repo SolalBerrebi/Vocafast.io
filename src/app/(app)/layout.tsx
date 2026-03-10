@@ -3,6 +3,8 @@
 import { usePathname, useRouter } from "next/navigation";
 import { Page, Tabbar, TabbarLink, Icon } from "konsta/react";
 import EnvSwitcher from "@/components/ui/EnvSwitcher";
+import XpPill from "@/components/ui/XpPill";
+import { useGamification } from "@/hooks/useGamification";
 
 function DecksIcon({ active }: { active: boolean }) {
   return (
@@ -68,6 +70,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // Hydrate gamification data from DB on app load
+  useGamification();
+
   // Don't show tabbar/header on fullscreen training pages
   const isTraining = pathname.startsWith("/train/");
 
@@ -81,8 +86,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <Page className="fixed inset-0 flex flex-col">
-      {/* Header with env switcher — z-20 so dropdown renders above scrollable content */}
-      <div className="flex-shrink-0 flex items-center justify-center py-2.5 border-b border-gray-100 bg-white/90 backdrop-blur-xl z-20 relative">
+      {/* Header with XP pill + env switcher — z-20 so dropdown renders above scrollable content */}
+      <div className="flex-shrink-0 flex items-center justify-between px-3 py-2.5 border-b border-gray-100 bg-white/90 backdrop-blur-xl z-20 relative">
+        <XpPill />
         <EnvSwitcher />
       </div>
 
