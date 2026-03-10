@@ -18,11 +18,15 @@ export const useEnvironmentStore = create<EnvironmentState>()(
       environments: [],
       setActiveEnvironment: (id) => set({ activeEnvironmentId: id }),
       setEnvironments: (envs) =>
-        set({
+        set((state) => ({
           environments: envs,
           activeEnvironmentId:
-            envs.find((e) => e.is_active)?.id ?? envs[0]?.id ?? null,
-        }),
+            // Keep persisted activeEnvironmentId if it still exists in the list
+            state.activeEnvironmentId &&
+            envs.some((e) => e.id === state.activeEnvironmentId)
+              ? state.activeEnvironmentId
+              : envs.find((e) => e.is_active)?.id ?? envs[0]?.id ?? null,
+        })),
       addEnvironment: (env) =>
         set((state) => ({
           environments: [...state.environments, env],

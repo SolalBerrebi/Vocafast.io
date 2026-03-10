@@ -167,7 +167,19 @@ export default function DeckDetailPage() {
           {words.length > 0 && (
             <div className="flex gap-1">
               <button
-                onClick={() => window.open(`/api/deck/export?deckId=${deckId}&format=csv`, "_blank")}
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/deck/export?deckId=${deckId}&format=csv`);
+                    if (!res.ok) return;
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${deck.name}.tsv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch {}
+                }}
                 className="p-2 rounded-xl bg-gray-100 active:bg-gray-200 transition-colors"
                 title="Export as TSV"
               >
@@ -176,7 +188,19 @@ export default function DeckDetailPage() {
                 </svg>
               </button>
               <button
-                onClick={() => window.open(`/api/deck/export?deckId=${deckId}&format=json`, "_blank")}
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/deck/export?deckId=${deckId}&format=json`);
+                    if (!res.ok) return;
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${deck.name}.vocafast.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch {}
+                }}
                 className="p-2 rounded-xl bg-gray-100 active:bg-gray-200 transition-colors"
                 title="Export as Vocafast JSON"
               >

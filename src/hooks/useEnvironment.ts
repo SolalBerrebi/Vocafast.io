@@ -49,7 +49,7 @@ export function useEnvironment() {
     await supabase
       .from("language_environments")
       .update({ is_active: false })
-      .neq("id", "");
+      .neq("id", id);
     await supabase
       .from("language_environments")
       .update({ is_active: true })

@@ -607,7 +607,7 @@ export default function SettingsPage() {
       <Sheet
         opened={!!deleteConfirmEnvId}
         onBackdropClick={() => setDeleteConfirmEnvId(null)}
-        className="pb-safe"
+        className="pb-safe !z-[99999]"
       >
         <div className="px-5 py-6 text-center">
           <div className="text-4xl mb-3">{deleteEnv?.icon ?? "🌍"}</div>
