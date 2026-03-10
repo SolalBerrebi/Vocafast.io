@@ -70,6 +70,8 @@ export default function ProgressPage() {
   }, [activeEnvironmentId, supabase]);
 
   useEffect(() => {
+    setLoading(true);
+    setStats(null);
     fetchStats();
   }, [fetchStats]);
 

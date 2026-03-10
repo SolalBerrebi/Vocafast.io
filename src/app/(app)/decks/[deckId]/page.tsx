@@ -10,6 +10,7 @@ import {
   ListInput,
 } from "konsta/react";
 import { createClient } from "@/lib/supabase/client";
+import { useEnvironmentStore } from "@/stores/environment-store";
 import type { Deck, Word } from "@/types/database";
 import WordRow from "@/components/deck/WordRow";
 
@@ -17,6 +18,7 @@ export default function DeckDetailPage() {
   const { deckId } = useParams<{ deckId: string }>();
   const router = useRouter();
   const supabase = createClient();
+  const activeEnvironmentId = useEnvironmentStore((s) => s.activeEnvironmentId);
   const [deck, setDeck] = useState<Deck | null>(null);
   const [words, setWords] = useState<Word[]>([]);
   const [search, setSearch] = useState("");
@@ -38,10 +40,19 @@ export default function DeckDetailPage() {
         .eq("deck_id", deckId)
         .order("created_at", { ascending: false }),
     ]);
-    setDeck(deckRes.data as Deck | null);
+
+    const deckData = deckRes.data as Deck | null;
+
+    // Validate deck belongs to active environment
+    if (deckData && activeEnvironmentId && deckData.environment_id !== activeEnvironmentId) {
+      router.replace("/decks");
+      return;
+    }
+
+    setDeck(deckData);
     setWords((wordsRes.data as Word[]) ?? []);
     setLoading(false);
-  }, [deckId, supabase]);
+  }, [deckId, activeEnvironmentId, supabase, router]);
 
   useEffect(() => {
     fetchData();

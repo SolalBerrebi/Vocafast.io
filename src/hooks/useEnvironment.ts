@@ -33,7 +33,19 @@ export function useEnvironment() {
   }, [fetchEnvironments]);
 
   const switchEnvironment = async (id: string) => {
-    // Deactivate all, activate selected
+    if (id === activeEnvironmentId) return;
+
+    // Update Zustand immediately for responsive UI
+    setActiveEnvironment(id);
+
+    // Update the environments list locally so is_active flags are correct
+    const updated = environments.map((e) => ({
+      ...e,
+      is_active: e.id === id,
+    }));
+    setEnvironments(updated as LanguageEnvironment[]);
+
+    // Persist to DB (deactivate all, then activate selected)
     await supabase
       .from("language_environments")
       .update({ is_active: false })
@@ -42,7 +54,6 @@ export function useEnvironment() {
       .from("language_environments")
       .update({ is_active: true })
       .eq("id", id);
-    setActiveEnvironment(id);
   };
 
   const createEnvironment = async (

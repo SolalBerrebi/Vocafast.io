@@ -22,6 +22,10 @@ export default function DecksPage() {
       return;
     }
 
+    // Reset on environment change to avoid showing stale decks
+    setLoading(true);
+    setDecks([]);
+
     const fetchDecks = async () => {
       const { data } = await supabase
         .from("decks")

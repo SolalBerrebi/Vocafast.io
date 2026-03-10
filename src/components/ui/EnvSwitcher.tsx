@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useEnvironment } from "@/hooks/useEnvironment";
 
 const LANG_NAMES: Record<string, string> = {
@@ -30,6 +31,8 @@ export function getLangName(code: string) {
 export default function EnvSwitcher() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
   const { activeEnvironment, environments, switchEnvironment } =
     useEnvironment();
 
@@ -86,7 +89,13 @@ export default function EnvSwitcher() {
               <button
                 key={env.id}
                 onClick={() => {
-                  switchEnvironment(env.id);
+                  if (env.id !== activeEnvironment.id) {
+                    switchEnvironment(env.id);
+                    // Redirect to /decks if viewing a deck-specific page (stale data)
+                    if (pathname.startsWith("/decks/")) {
+                      router.push("/decks");
+                    }
+                  }
                   setOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${

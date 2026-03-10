@@ -244,29 +244,38 @@ export default function AddWordsPage() {
     }
   };
 
-  // CAPT-01: Text extraction
+  // Text extraction state
+  const [textError, setTextError] = useState("");
+
+  // CAPT-01: Text extraction via Groq LLM
   const handleExtract = async () => {
     if (!textInput.trim() || !targetLang) return;
     setExtracting(true);
+    setTextError("");
     try {
-      const res = await fetch("/api/ai/extract-vocabulary", {
+      const res = await fetch("/api/ai/extract-text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: textInput.trim(),
-          sourceLang: nativeLang,
-          targetLang: targetLang,
+          nativeLang,
+          targetLang,
         }),
       });
       const data = await res.json();
-      if (data.words) {
+      if (!res.ok || data.error) {
+        setTextError(data.error || "Failed to extract vocabulary");
+      } else if (data.words && data.words.length > 0) {
         setExtracted(data.words.map((w: { word: string; translation: string }) => ({
           ...w,
           selected: true,
         })));
+      } else {
+        setTextError("No vocabulary found in this text. Try pasting different content.");
       }
     } catch (err) {
       console.error("Extraction failed:", err);
+      setTextError("Failed to extract vocabulary. Please try again.");
     }
     setExtracting(false);
   };
@@ -587,13 +596,28 @@ export default function AddWordsPage() {
       {activeTab === "text" && (
         <>
           <Block>
+            <p className="text-gray-500 text-sm mb-3">
+              Paste any text — a word list, a paragraph, or even sentences. AI will extract vocabulary and translate it for you.
+            </p>
             <textarea
               className="w-full h-32 p-3.5 border border-gray-200 bg-gray-50 rounded-xl text-[16px] resize-none focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
-              placeholder="Paste or type words here (one per line, or separated by commas)..."
+              placeholder="e.g. words separated by commas, a paragraph from a book, a list of verbs..."
               value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
+              onChange={(e) => {
+                setTextInput(e.target.value);
+                setTextError("");
+              }}
             />
           </Block>
+
+          {textError && (
+            <Block>
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-sm text-red-600">{textError}</p>
+              </div>
+            </Block>
+          )}
+
           <Block>
             <Button
               large
