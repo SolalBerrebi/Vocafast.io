@@ -21,6 +21,7 @@ export default function FirstDeckPage() {
   );
   const [deckName, setDeckName] = useState("");
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
+  const [vocabLevel, setVocabLevel] = useState("beginner");
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Creating...");
 
@@ -71,6 +72,7 @@ export default function FirstDeckPage() {
             nativeLang,
             targetLang,
             wordCount: 15,
+            level: vocabLevel,
           }),
         });
 
@@ -143,6 +145,35 @@ export default function FirstDeckPage() {
             </button>
           ))}
         </div>
+
+        {/* Level selector (shown when a preset is selected) */}
+        {selectedPreset !== null && (
+          <div className="mb-6">
+            <p className="text-[13px] font-semibold text-gray-500 mb-2">Difficulty</p>
+            <div className="flex gap-1.5">
+              {[
+                { key: "starter", label: "Starter", icon: "🌱" },
+                { key: "beginner", label: "Beginner", icon: "📗" },
+                { key: "intermediate", label: "Inter.", icon: "📘" },
+                { key: "advanced", label: "Advanced", icon: "📕" },
+                { key: "native", label: "Native", icon: "🗣️" },
+              ].map((lvl) => (
+                <button
+                  key={lvl.key}
+                  onClick={() => setVocabLevel(lvl.key)}
+                  className={`flex-1 py-2.5 px-1 rounded-xl text-center transition-all ${
+                    vocabLevel === lvl.key
+                      ? "bg-blue-500 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-500 active:bg-gray-200"
+                  }`}
+                >
+                  <span className="text-sm block">{lvl.icon}</span>
+                  <span className="text-[10px] font-semibold block mt-0.5 leading-tight">{lvl.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 mb-5">
           <div className="flex-1 h-px bg-gray-200" />

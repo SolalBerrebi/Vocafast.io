@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, nativeLang, targetLang, existingWords, wordCount } = await request.json();
+    const { topic, nativeLang, targetLang, existingWords, wordCount, level } = await request.json();
 
     if (!topic || !targetLang || !nativeLang) {
       return NextResponse.json(
@@ -58,7 +58,19 @@ export async function POST(request: NextRequest) {
         ? `\n- Do NOT include any of these words (the user already has them): ${existingWords.join(", ")}`
         : "";
 
-    const prompt = `You are a vocabulary teacher. Generate exactly ${count} items for the user's request: "${topic}".
+    // Map level to prompt instructions
+    const levelDescriptions: Record<string, string> = {
+      starter: "ABSOLUTE BEGINNER level — the very first words someone learns: greetings, numbers 1-10, yes/no, please/thank you, basic survival words. Think day 1 of language learning.",
+      beginner: "BEGINNER level — common everyday words a tourist or early learner would need: basic food, colors, family members, simple verbs (go, eat, want), common adjectives (big, small, good).",
+      intermediate: "INTERMEDIATE level — conversational vocabulary for someone who can hold basic conversations: more nuanced verbs, abstract concepts, workplace terms, opinions and feelings, compound expressions.",
+      advanced: "ADVANCED level — sophisticated vocabulary for fluent conversations: formal/literary words, precise synonyms, technical terms, less common but useful expressions, phrasal verbs with nuance.",
+      native: "NATIVE/IDIOMATIC level — slang, idioms, colloquial expressions, proverbs, cultural references, and words that only a native speaker would naturally use. Include informal/spoken language.",
+    };
+    const levelInstruction = level && levelDescriptions[level]
+      ? `\nVOCABULARY LEVEL: ${levelDescriptions[level]}`
+      : "";
+
+    const prompt = `You are a vocabulary teacher. Generate exactly ${count} items for the user's request: "${topic}".${levelInstruction}
 
 The "word" field must be in ${targetName}. The "translation" field must be in ${nativeName}.
 

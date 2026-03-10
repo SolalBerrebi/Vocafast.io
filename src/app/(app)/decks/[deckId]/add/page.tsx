@@ -57,6 +57,7 @@ export default function AddWordsPage() {
   const [topicWords, setTopicWords] = useState<ExtractedWord[]>([]);
   const [topicError, setTopicError] = useState("");
   const [wordCount, setWordCount] = useState(15);
+  const [vocabLevel, setVocabLevel] = useState("beginner");
 
   // Active tab
   const [activeTab, setActiveTab] = useState<"manual" | "photo" | "text" | "topic">("manual");
@@ -331,6 +332,7 @@ export default function AddWordsPage() {
           targetLang: targetLang,
           existingWords: existingWords.slice(0, 100),
           wordCount,
+          level: vocabLevel,
         }),
       });
       const data = await res.json();
@@ -709,6 +711,33 @@ export default function AddWordsPage() {
                       "Go"
                     )}
                   </Button>
+                </div>
+              </Block>
+
+              {/* Vocabulary level selector */}
+              <Block>
+                <span className="text-[13px] font-semibold text-gray-500 mb-2 block">Difficulty</span>
+                <div className="flex gap-1.5">
+                  {[
+                    { key: "starter", label: "Starter", icon: "🌱" },
+                    { key: "beginner", label: "Beginner", icon: "📗" },
+                    { key: "intermediate", label: "Inter.", icon: "📘" },
+                    { key: "advanced", label: "Advanced", icon: "📕" },
+                    { key: "native", label: "Native", icon: "🗣️" },
+                  ].map((lvl) => (
+                    <button
+                      key={lvl.key}
+                      onClick={() => setVocabLevel(lvl.key)}
+                      className={`flex-1 py-2 px-1 rounded-xl text-center transition-colors ${
+                        vocabLevel === lvl.key
+                          ? "bg-blue-500 text-white shadow-sm"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      <span className="text-sm block">{lvl.icon}</span>
+                      <span className="text-[10px] font-semibold block mt-0.5 leading-tight">{lvl.label}</span>
+                    </button>
+                  ))}
                 </div>
               </Block>
 
