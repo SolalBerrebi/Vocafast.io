@@ -60,11 +60,18 @@ Analyze the following text and extract useful vocabulary from it. The text may b
 - A mix of ${targetName} and ${nativeName} words — organize them into proper pairs
 - Words in any language — always translate so "word" is in ${targetName} and "translation" is in ${nativeName}
 
+LANGUAGE DETECTION — be smart about which field goes where:
+- For EACH word/phrase in the input, detect its language automatically.
+- Words in ${targetName} → put in "word" field, translate to ${nativeName} for "translation" field.
+- Words in ${nativeName} → put in "translation" field, translate to ${targetName} for "word" field.
+- Words in a third language → translate to both ${targetName} (for "word") and ${nativeName} (for "translation").
+- Do NOT blindly assume the input language. Detect it per-item.
+
 IMPORTANT RULES:
 - Items can be single words OR multi-word expressions/phrases (e.g. "to get along", "faire la grasse matinée"). Extract natural expressions as-is.
 - "word" MUST be in ${targetName} (the language being learned)
 - "translation" MUST be in ${nativeName} (the user's native language)
-- If input words are already in ${nativeName}, provide the ${targetName} equivalent in "word" and keep the original as "translation"
+- If the text contains verb conjugations or irregular forms, preserve them (e.g. "go / went / gone" stays as-is in the "word" field)
 - Deduplicate entries
 - Maximum 30 items
 

@@ -57,9 +57,13 @@ Extract all word-translation pairs you can find.
 
 IMPORTANT RULES:
 - Items may be single words OR multi-word expressions/phrases (e.g. "to take off", "faire la grasse matinée", "להוציא לפועל"). Extract expressions as-is — do NOT split them into individual words.
-- The "word" field must be in ${targetName} (the language being learned). The "translation" field MUST be in ${nativeName} (the user's native language).
-- If a word in the image is already in ${nativeName}, put it in "translation" and provide the ${targetName} equivalent in "word".
-- If the image shows translations in a third language (neither ${targetName} nor ${nativeName}), re-translate so that "translation" is always in ${nativeName}.
+- LANGUAGE DETECTION: For EACH word/phrase visible in the image, detect its language automatically:
+  - Words in ${targetName} → put in "word" field, translate to ${nativeName} for "translation".
+  - Words in ${nativeName} → put in "translation" field, translate to ${targetName} for "word".
+  - Words in a third language → translate to both fields appropriately.
+  - Do NOT assume all text is in one language. Detect per-item.
+- The "word" field MUST always end up in ${targetName}. The "translation" field MUST always end up in ${nativeName}.
+- If the image contains verb conjugations or irregular forms, preserve them (e.g. "go / went / gone").
 
 Extraction guidelines:
 - If the image contains a table with columns, extract each row as a pair.

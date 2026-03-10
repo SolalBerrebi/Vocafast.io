@@ -63,22 +63,28 @@ export async function POST(request: NextRequest) {
 The "word" field must be in ${targetName}. The "translation" field must be in ${nativeName}.
 
 CRITICAL — Interpret the user's request literally:
-- If the user asks for "irregular verbs", generate actual irregular verbs (e.g. go/went/gone, buy/bought/bought, run/ran/run) — NOT words about grammar or linguistics.
+- If the user asks for "irregular verbs" in English, generate actual irregular verbs WITH their past tense and past participle forms in the "word" field. Example: "go / went / gone", "buy / bought / bought", "run / ran / run". The "translation" field should contain the ${nativeName} translation of the verb.
+- If the user asks for "irregular verbs" in another language, show the relevant irregular conjugations for that language (e.g. French: "aller / je vais / j'allais").
 - If the user asks for "animals", generate actual animal names — NOT words about biology.
 - If the user asks for "emotions", generate actual emotion words (happy, sad, angry) — NOT psychology terms.
 - In short: generate INSTANCES of the category, not META-VOCABULARY about the category.
 - Items can be single words OR multi-word expressions/phrases when natural (e.g. "to get along", "ice cream", "traffic jam").
 
+LANGUAGE DETECTION — be smart about which field goes where:
+- Detect the language of each generated item. The "word" MUST be in ${targetName}, the "translation" MUST be in ${nativeName}.
+- If ${targetName} and ${nativeName} share some words (e.g. cognates), use context to assign them correctly.
+
 Additional rules:
 - Choose practical, commonly-used items
 - Items should be appropriate for a language learner (not too obscure)
-- For ${targetName}, use the most common/standard form
-- For verbs, use the infinitive form (e.g. "to go", "aller", "ללכת")${excludeClause}
+- For regular verbs, use the infinitive form (e.g. "to go", "aller", "ללכת")
+- For irregular verbs or conjugation topics, include the irregular/conjugated forms in the "word" field${excludeClause}
 
 Return ONLY a valid JSON array with no other text, no markdown, no code fences.
 Each element must have "word" (in ${targetName}) and "translation" (in ${nativeName}) fields.
 
-Example format: [{"word":"שלום","translation":"hello"},{"word":"תודה","translation":"thank you"}]`;
+Example for irregular verbs in English with ${nativeName} translation: [{"word":"go / went / gone","translation":"aller"},{"word":"buy / bought / bought","translation":"acheter"}]
+Example for regular vocabulary: [{"word":"שלום","translation":"hello"},{"word":"תודה","translation":"thank you"}]`;
 
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
