@@ -34,7 +34,7 @@ struct SessionSummaryView: View {
                             .font(.system(size: 64))
                         Text("Level Up!")
                             .font(.title2.bold())
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                         Text(currentLevel.name)
                             .font(.headline)
                             .foregroundStyle(.secondary)
@@ -97,7 +97,7 @@ struct SessionSummaryView: View {
                                 Spacer()
                                 Text("+\(xp.totalXP) XP")
                                     .font(.headline)
-                                    .foregroundStyle(.accentColor)
+                                    .foregroundStyle(Color.accentColor)
                             }
                         }
                         .padding(16)

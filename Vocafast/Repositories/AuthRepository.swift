@@ -33,6 +33,8 @@ final class AuthRepository {
     }
 
     var currentUserId: UUID? {
-        try? supabase.auth.session.user.id
+        get async {
+            try? await supabase.auth.session.user.id
+        }
     }
 }

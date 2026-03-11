@@ -50,7 +50,7 @@ struct DecksView: View {
                             .frame(width: 56, height: 56)
                             .background(Color.accentColor)
                             .clipShape(Circle())
-                            .shadow(color: .accentColor.opacity(0.3), radius: 8, y: 4)
+                            .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 4)
                     }
                     .padding(.trailing, 20)
                     .padding(.bottom, 20)

@@ -15,7 +15,7 @@ struct NotificationSettingsSection: View {
         Section("Notifications") {
             Toggle("Enable Notifications", isOn: Binding(
                 get: { isEnabled },
-                set: { Task { await viewModel.toggleNotifications($0) } }
+                set: { newValue in Task { await viewModel.toggleNotifications(newValue) } }
             ))
 
             if isEnabled {

@@ -39,7 +39,7 @@ struct TrainingLauncherView: View {
                             } label: {
                                 HStack {
                                     Image(systemName: viewModel.selectedScope == scope ? "largecircle.fill.circle" : "circle")
-                                        .foregroundStyle(viewModel.selectedScope == scope ? .accentColor : .secondary)
+                                        .foregroundStyle(viewModel.selectedScope == scope ? Color.accentColor : .secondary)
                                     Text(scope.rawValue)
                                         .foregroundStyle(.primary)
                                     Spacer()
@@ -208,7 +208,7 @@ private struct ModeButton: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
             )
-            .foregroundStyle(isSelected ? .accentColor : .primary)
+            .foregroundStyle(isSelected ? Color.accentColor : .primary)
         }
     }
 }

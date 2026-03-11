@@ -88,7 +88,7 @@ struct DeckDetailView: View {
                             if viewModel.isSelectMode {
                                 HStack {
                                     Image(systemName: viewModel.selectedWordIds.contains(word.id) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(viewModel.selectedWordIds.contains(word.id) ? .accentColor : .secondary)
+                                        .foregroundStyle(viewModel.selectedWordIds.contains(word.id) ? Color.accentColor : .secondary)
                                     WordRowView(word: word)
                                 }
                                 .contentShape(Rectangle())
@@ -208,7 +208,7 @@ struct EmptyMethodCard: View {
                 .frame(width: 40, height: 40)
                 .background(Color.accentColor.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
 
             VStack(alignment: .leading) {
                 Text(title).font(.subheadline.bold())

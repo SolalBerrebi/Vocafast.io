@@ -55,10 +55,10 @@ struct TopicGenerationSection: View {
                         Spacer()
                         Text("\(Int(viewModel.topicWordCount))")
                             .fontWeight(.semibold)
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
                     }
                     Slider(value: $viewModel.topicWordCount, in: 5...50, step: 1)
-                        .tint(.accentColor)
+                        .tint(Color.accentColor)
                 }
                 .padding(.horizontal, 16)
 

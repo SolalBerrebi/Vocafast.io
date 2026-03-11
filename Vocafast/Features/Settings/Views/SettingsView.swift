@@ -141,7 +141,7 @@ private struct AddLanguageSheet: View {
                             Spacer()
                             if viewModel.selectedNewLang == lang.code {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.accentColor)
+                                    .foregroundStyle(Color.accentColor)
                             }
                         }
                     }

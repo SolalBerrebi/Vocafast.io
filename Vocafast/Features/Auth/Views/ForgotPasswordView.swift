@@ -16,7 +16,7 @@ struct ForgotPasswordView: View {
                     VStack(spacing: 16) {
                         Image(systemName: "envelope.badge.fill")
                             .font(.system(size: 60))
-                            .foregroundStyle(.accentColor)
+                            .foregroundStyle(Color.accentColor)
 
                         Text("Check your email")
                             .font(.title2.bold())

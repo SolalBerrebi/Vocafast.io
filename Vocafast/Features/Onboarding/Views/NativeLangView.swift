@@ -37,7 +37,7 @@ struct NativeLangView: View {
                                 Spacer()
                                 if viewModel.selectedNativeLang == lang.code {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(.accentColor)
+                                        .foregroundStyle(Color.accentColor)
                                 }
                             }
                             .padding(.horizontal, 16)

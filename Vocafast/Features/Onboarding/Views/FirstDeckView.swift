@@ -103,11 +103,11 @@ struct FirstDeckView: View {
                                 Spacer()
                                 Text("\(Int(viewModel.wordCount))")
                                     .font(.headline)
-                                    .foregroundStyle(.accentColor)
+                                    .foregroundStyle(Color.accentColor)
                             }
 
                             Slider(value: $viewModel.wordCount, in: 5...50, step: 1)
-                                .tint(.accentColor)
+                                .tint(Color.accentColor)
                         }
                     }
                 }

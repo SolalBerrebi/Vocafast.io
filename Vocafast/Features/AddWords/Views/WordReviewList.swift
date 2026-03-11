@@ -23,7 +23,7 @@ struct WordReviewList: View {
             ForEach(words) { word in
                 HStack {
                     Image(systemName: word.isSelected ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(word.isSelected ? .accentColor : .secondary)
+                        .foregroundStyle(word.isSelected ? Color.accentColor : .secondary)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(word.word)
