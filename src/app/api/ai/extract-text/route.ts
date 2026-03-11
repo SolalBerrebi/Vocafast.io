@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { text, nativeLang, targetLang } = await request.json();
+    const { text, nativeLang, targetLang, includeContext } = await request.json();
 
     if (!text || !targetLang || !nativeLang) {
       return NextResponse.json(
@@ -75,8 +75,8 @@ IMPORTANT RULES:
 - Deduplicate entries
 - Maximum 30 items
 
-Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields.
-Example: [{"word":"שלום","translation":"hello"},{"word":"לקחת הפסקה","translation":"to take a break"}]
+Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields${includeContext ? ', and a "context" field with a short example sentence in ' + targetName + ' using the word (under 15 words, natural and simple)' : ""}.
+Example: [{"word":"שלום","translation":"hello"${includeContext ? ',"context":"שלום, מה שלומך היום?"' : ""}},{"word":"לקחת הפסקה","translation":"to take a break"${includeContext ? ',"context":"אני צריך לקחת הפסקה קצרה"' : ""}}]
 
 If the text is empty or contains no extractable vocabulary, return an empty array: []
 

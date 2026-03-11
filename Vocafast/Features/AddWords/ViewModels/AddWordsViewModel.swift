@@ -23,6 +23,9 @@ final class AddWordsViewModel: ObservableObject {
     @Published var selectedLevel = "beginner"
     @Published var topicWordCount: Double = 15
 
+    // Example sentences toggle
+    @Published var includeExamples = false
+
     // Shared state
     @Published var extractedWords: [ExtractedWord] = []
     @Published var recentlyAdded: [Word] = []
@@ -136,7 +139,8 @@ final class AddWordsViewModel: ObservableObject {
                 base64: compressed.base64,
                 mimeType: compressed.mimeType,
                 nativeLang: nativeLang,
-                targetLang: targetLang
+                targetLang: targetLang,
+                includeContext: includeExamples
             )
             words = dedup(words)
 
@@ -170,7 +174,8 @@ final class AddWordsViewModel: ObservableObject {
             var words = try await aiService.extractFromText(
                 text: inputText,
                 nativeLang: nativeLang,
-                targetLang: targetLang
+                targetLang: targetLang,
+                includeContext: includeExamples
             )
             words = dedup(words)
 
@@ -202,7 +207,8 @@ final class AddWordsViewModel: ObservableObject {
                 targetLang: targetLang,
                 existingWords: Array(existingWords),
                 wordCount: Int(topicWordCount),
-                level: selectedLevel
+                level: selectedLevel,
+                includeContext: includeExamples
             )
             words = dedup(words)
 
@@ -231,7 +237,7 @@ final class AddWordsViewModel: ObservableObject {
         do {
             let words = try await wordRepo.addBatch(
                 deckId: deckId,
-                words: selected.map { ($0.word, $0.translation) },
+                words: selected.map { ($0.word, $0.translation, $0.context) },
                 sourceType: sourceType
             )
             recentlyAdded.insert(contentsOf: words, at: 0)

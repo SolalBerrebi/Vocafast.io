@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, nativeLang, targetLang, existingWords, wordCount, level } = await request.json();
+    const { topic, nativeLang, targetLang, existingWords, wordCount, level, includeContext } = await request.json();
 
     if (!topic || !targetLang || !nativeLang) {
       return NextResponse.json(
@@ -70,9 +70,18 @@ export async function POST(request: NextRequest) {
       ? `\nVOCABULARY LEVEL: ${levelDescriptions[level]}`
       : "";
 
+    const contextInstruction = includeContext
+      ? `\n\nEXAMPLE SENTENCES: For EACH word, also include a "context" field with a short, natural example sentence in ${targetName} that uses the word. The sentence should be simple enough for a learner at the specified level to understand. Keep sentences under 15 words.`
+      : "";
+
+    const contextExample = includeContext
+      ? `Example: [{"word":"שלום","translation":"hello","context":"שלום, מה שלומך היום?"},{"word":"תודה","translation":"thank you","context":"תודה רבה על העזרה"}]`
+      : `Example for irregular verbs in English with ${nativeName} translation: [{"word":"go / went / gone","translation":"aller"},{"word":"buy / bought / bought","translation":"acheter"}]
+Example for regular vocabulary: [{"word":"שלום","translation":"hello"},{"word":"תודה","translation":"thank you"}]`;
+
     const prompt = `You are a vocabulary teacher. Generate exactly ${count} items for the user's request: "${topic}".${levelInstruction}
 
-The "word" field must be in ${targetName}. The "translation" field must be in ${nativeName}.
+The "word" field must be in ${targetName}. The "translation" field must be in ${nativeName}.${contextInstruction}
 
 CRITICAL — Interpret the user's request literally:
 - If the user asks for "irregular verbs" in English, generate actual irregular verbs WITH their past tense and past participle forms in the "word" field. Example: "go / went / gone", "buy / bought / bought", "run / ran / run". The "translation" field should contain the ${nativeName} translation of the verb.
@@ -93,10 +102,9 @@ Additional rules:
 - For irregular verbs or conjugation topics, include the irregular/conjugated forms in the "word" field${excludeClause}
 
 Return ONLY a valid JSON array with no other text, no markdown, no code fences.
-Each element must have "word" (in ${targetName}) and "translation" (in ${nativeName}) fields.
+Each element must have "word" (in ${targetName}) and "translation" (in ${nativeName}) fields${includeContext ? ', and a "context" field with an example sentence' : ""}.
 
-Example for irregular verbs in English with ${nativeName} translation: [{"word":"go / went / gone","translation":"aller"},{"word":"buy / bought / bought","translation":"acheter"}]
-Example for regular vocabulary: [{"word":"שלום","translation":"hello"},{"word":"תודה","translation":"thank you"}]`;
+${contextExample}`;
 
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",

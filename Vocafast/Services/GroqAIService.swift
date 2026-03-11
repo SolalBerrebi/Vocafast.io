@@ -7,9 +7,13 @@ final class GroqAIService: AIService {
 
     // MARK: - Text Extraction
 
-    func extractFromText(text: String, nativeLang: String, targetLang: String) async throws -> [ExtractedWord] {
+    func extractFromText(text: String, nativeLang: String, targetLang: String, includeContext: Bool = false) async throws -> [ExtractedWord] {
         let targetName = Config.languageName(for: targetLang)
         let nativeName = Config.languageName(for: nativeLang)
+
+        let contextFields = includeContext
+            ? #", and a "context" field with a short example sentence in \#(targetName) using the word (under 15 words, natural and simple)"#
+            : ""
 
         let prompt = """
         You are a vocabulary extraction assistant for language learners.
@@ -37,7 +41,7 @@ final class GroqAIService: AIService {
         - Deduplicate entries
         - Maximum 30 items
 
-        Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields.
+        Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields\(contextFields).
 
         If the text is empty or contains no extractable vocabulary, return an empty array: []
 
@@ -50,9 +54,13 @@ final class GroqAIService: AIService {
 
     // MARK: - Image Extraction
 
-    func extractFromImage(base64: String, mimeType: String, nativeLang: String, targetLang: String) async throws -> [ExtractedWord] {
+    func extractFromImage(base64: String, mimeType: String, nativeLang: String, targetLang: String, includeContext: Bool = false) async throws -> [ExtractedWord] {
         let targetName = Config.languageName(for: targetLang)
         let nativeName = Config.languageName(for: nativeLang)
+
+        let contextFields = includeContext
+            ? #", and a "context" field with a short example sentence in \#(targetName) using the word (under 15 words, natural and simple)"#
+            : ""
 
         let prompt = """
         You are a vocabulary extraction assistant for language learners. Analyze this image and extract useful vocabulary from it.
@@ -79,7 +87,7 @@ final class GroqAIService: AIService {
         - The "word" field MUST always end up in \(targetName). The "translation" field MUST always end up in \(nativeName).
         - Focus on PRACTICAL vocabulary a language learner would benefit from knowing.
 
-        Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields.
+        Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields\(contextFields).
 
         If you cannot find any words, return an empty array: []
         """
@@ -89,7 +97,7 @@ final class GroqAIService: AIService {
 
     // MARK: - Topic Generation
 
-    func generateTopic(topic: String, nativeLang: String, targetLang: String, existingWords: [String], wordCount: Int, level: String?) async throws -> [ExtractedWord] {
+    func generateTopic(topic: String, nativeLang: String, targetLang: String, existingWords: [String], wordCount: Int, level: String?, includeContext: Bool = false) async throws -> [ExtractedWord] {
         let targetName = Config.languageName(for: targetLang)
         let nativeName = Config.languageName(for: nativeLang)
         let count = min(50, max(5, wordCount))
@@ -105,8 +113,16 @@ final class GroqAIService: AIService {
         ]
         let levelInstruction = level.flatMap { levelDescriptions[$0] }.map { "\nVOCABULARY LEVEL: \($0)" } ?? ""
 
+        let contextInstruction = includeContext
+            ? "\n\nEXAMPLE SENTENCES: For EACH word, also include a \"context\" field with a short, natural example sentence in \(targetName) that uses the word. The sentence should be simple enough for a learner at the specified level to understand. Keep sentences under 15 words."
+            : ""
+
+        let contextFields = includeContext
+            ? #", and a "context" field with an example sentence"#
+            : ""
+
         let prompt = """
-        You are a vocabulary teacher. Generate exactly \(count) items for the user's request: "\(topic)".\(levelInstruction)
+        You are a vocabulary teacher. Generate exactly \(count) items for the user's request: "\(topic)".\(levelInstruction)\(contextInstruction)
 
         The "word" field must be in \(targetName). The "translation" field must be in \(nativeName).
 
@@ -122,11 +138,11 @@ final class GroqAIService: AIService {
         - For irregular verbs or conjugation topics, include the irregular/conjugated forms\(excludeClause)
 
         Return ONLY a valid JSON array with no other text, no markdown, no code fences.
-        Each element must have "word" (in \(targetName)) and "translation" (in \(nativeName)) fields.
+        Each element must have "word" (in \(targetName)) and "translation" (in \(nativeName)) fields\(contextFields).
         """
 
         let maxTokens = count > 20 ? 4096 : 2048
-        return try await callGroq(prompt: prompt, temperature: 0.3, maxTokens: maxTokens)
+        return try await callGroq(prompt: prompt, temperature: 0.3, maxTokens: includeContext ? 4096 : maxTokens)
     }
 
     // MARK: - Private Helpers
@@ -212,16 +228,10 @@ final class GroqAIService: AIService {
             throw AIError.parseError
         }
 
-        struct WordPair: Decodable {
-            let word: String
-            let translation: String
-        }
-
-        let pairs = try JSONDecoder().decode([WordPair].self, from: jsonData)
+        let pairs = try JSONDecoder().decode([ExtractedWord].self, from: jsonData)
 
         return pairs
             .filter { !$0.word.isEmpty && $0.word.count < 200 && !$0.translation.isEmpty }
-            .map { ExtractedWord(word: $0.word, translation: $0.translation) }
     }
 }
 

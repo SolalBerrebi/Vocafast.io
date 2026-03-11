@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { imageBase64, mimeType, targetLang, nativeLang } =
+    const { imageBase64, mimeType, targetLang, nativeLang, includeContext } =
       await request.json();
 
     if (!imageBase64 || !targetLang || !nativeLang) {
@@ -77,8 +77,8 @@ IMPORTANT RULES:
 - If the image contains verb conjugations or irregular forms, preserve them (e.g. "go / went / gone").
 - Focus on PRACTICAL vocabulary a language learner would benefit from knowing.
 
-Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields.
-Example: [{"word":"שלום","translation":"hello"},{"word":"לקחת הפסקה","translation":"to take a break"}]
+Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields${includeContext ? ', and a "context" field with a short example sentence in ' + targetName + ' using the word (under 15 words, natural and simple)' : ""}.
+Example: [{"word":"שלום","translation":"hello"${includeContext ? ',"context":"שלום, מה שלומך היום?"' : ""}},{"word":"לקחת הפסקה","translation":"to take a break"${includeContext ? ',"context":"אני צריך לקחת הפסקה קצרה"' : ""}}]
 
 If you cannot find any words, return an empty array: []`;
 

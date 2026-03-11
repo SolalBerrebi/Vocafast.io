@@ -31,6 +31,12 @@ struct WordReviewList: View {
                         Text(word.translation)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                        if let context = word.context, !context.isEmpty {
+                            Text(context)
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .italic()
+                        }
                     }
 
                     Spacer()

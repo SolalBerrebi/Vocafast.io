@@ -282,6 +282,30 @@ struct AddWordsView: View {
             }
             .padding(.horizontal, 16)
 
+            // Example sentences toggle
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Example sentences")
+                        .font(.subheadline.weight(.semibold))
+                    Text("AI generates a usage example for each word")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                Spacer()
+                Toggle("", isOn: $viewModel.includeExamples)
+                    .labelsHidden()
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(UIColor.systemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(Color(UIColor.separator), lineWidth: 0.5)
+                    )
+            )
+            .padding(.horizontal, 16)
+
             // Deck word count
             if !viewModel.existingWordCount.isEmpty {
                 Text(viewModel.existingWordCount)

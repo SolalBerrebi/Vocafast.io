@@ -19,6 +19,7 @@ import type { WordSourceType } from "@/types/database";
 interface ExtractedWord {
   word: string;
   translation: string;
+  context?: string;
   selected: boolean;
 }
 
@@ -68,6 +69,9 @@ export default function AddWordsPage() {
 
   // Text error
   const [textError, setTextError] = useState("");
+
+  // Include example sentences toggle (shared across AI methods)
+  const [includeExamples, setIncludeExamples] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -175,6 +179,7 @@ export default function AddWordsPage() {
           mimeType,
           targetLang: targetLang,
           nativeLang,
+          includeContext: includeExamples,
         }),
       });
 
@@ -229,6 +234,7 @@ export default function AddWordsPage() {
         deck_id: deckId,
         word: w.word,
         translation: w.translation,
+        context_sentence: w.context || null,
         source_type: "photo" as WordSourceType,
       })),
     );
@@ -256,6 +262,7 @@ export default function AddWordsPage() {
           text: textInput.trim(),
           nativeLang,
           targetLang,
+          includeContext: includeExamples,
         }),
       });
       const data = await res.json();
@@ -286,6 +293,7 @@ export default function AddWordsPage() {
         deck_id: deckId,
         word: w.word,
         translation: w.translation,
+        context_sentence: w.context || null,
         source_type: sourceType,
       })),
     );
@@ -325,6 +333,7 @@ export default function AddWordsPage() {
           existingWords: existingWords.slice(0, 100),
           wordCount,
           level: vocabLevel,
+          includeContext: includeExamples,
         }),
       });
       const data = await res.json();
@@ -466,9 +475,31 @@ export default function AddWordsPage() {
             </button>
           </div>
 
+          {/* Include example sentences toggle */}
+          <div className="mt-3 flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-3.5">
+            <div className="flex-1 mr-3">
+              <span className="text-[14px] font-semibold text-gray-900 block">Example sentences</span>
+              <span className="text-[12px] text-gray-400 leading-snug block mt-0.5">
+                AI generates a usage example for each word — helpful for learning in context
+              </span>
+            </div>
+            <button
+              onClick={() => setIncludeExamples(!includeExamples)}
+              className={`relative w-[51px] h-[31px] rounded-full transition-colors flex-shrink-0 ${
+                includeExamples ? "bg-blue-500" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`absolute top-[2px] left-[2px] w-[27px] h-[27px] bg-white rounded-full shadow transition-transform ${
+                  includeExamples ? "translate-x-[20px]" : ""
+                }`}
+              />
+            </button>
+          </div>
+
           {/* Word count badge */}
           {existingWords.length > 0 && (
-            <div className="mt-4 text-center">
+            <div className="mt-3 text-center">
               <span className="text-[12px] text-gray-400">
                 {existingWords.length} word{existingWords.length !== 1 ? "s" : ""} already in this deck
               </span>
@@ -618,6 +649,7 @@ export default function AddWordsPage() {
                     key={i}
                     title={w.word}
                     after={w.translation}
+                    subtitle={w.context || undefined}
                     media={
                       <Checkbox
                         checked={w.selected}
@@ -782,6 +814,7 @@ export default function AddWordsPage() {
                     key={i}
                     title={w.word}
                     after={w.translation}
+                    subtitle={w.context || undefined}
                     media={
                       <Checkbox
                         checked={w.selected}
@@ -872,6 +905,7 @@ export default function AddWordsPage() {
                     key={i}
                     title={w.word}
                     after={w.translation}
+                    subtitle={w.context || undefined}
                     media={
                       <Checkbox
                         checked={w.selected}

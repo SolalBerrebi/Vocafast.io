@@ -177,7 +177,7 @@ final class WordRepository {
         }
     }
 
-    func addBatch(deckId: UUID, words: [(word: String, translation: String)], sourceType: WordSourceType) async throws -> [Word] {
+    func addBatch(deckId: UUID, words: [(word: String, translation: String, context: String?)], sourceType: WordSourceType) async throws -> [Word] {
         let batchSize = 100
         var allInserted: [Word] = []
 
@@ -189,7 +189,7 @@ final class WordRepository {
                     word: item.word,
                     translation: item.translation,
                     sourceType: sourceType.rawValue,
-                    contextSentence: nil
+                    contextSentence: item.context
                 )
             }
             let inserted: [Word] = try await supabase
