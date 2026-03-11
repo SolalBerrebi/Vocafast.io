@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct TextExtractionSection: View {
     @ObservedObject var viewModel: AddWordsViewModel
@@ -6,11 +7,18 @@ struct TextExtractionSection: View {
     var body: some View {
         VStack(spacing: 16) {
             if viewModel.extractedWords.isEmpty {
+                // Description
+                Text("Paste any text \u{2014} a word list, a paragraph from a book, sentences from a chat. AI extracts and translates the vocabulary.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+
                 VStack(spacing: 12) {
                     TextEditor(text: $viewModel.inputText)
                         .frame(minHeight: 120)
                         .padding(8)
-                        .background(Color(.systemGray6))
+                        .background(Color(UIColor.systemGray6))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(
                             Group {
@@ -67,7 +75,7 @@ struct TextExtractionSection: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)
-                    .background(Color(.systemGray5))
+                    .background(Color(UIColor.systemGray5))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                     Button {

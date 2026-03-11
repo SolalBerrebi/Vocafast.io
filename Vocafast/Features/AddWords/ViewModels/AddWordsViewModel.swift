@@ -38,6 +38,12 @@ final class AddWordsViewModel: ObservableObject {
     private let aiService = GroqAIService()
     private var existingWords: Set<String> = []
 
+    var existingWordCount: String {
+        let count = existingWords.count
+        if count == 0 { return "" }
+        return "\(count) word\(count == 1 ? "" : "s") already in this deck"
+    }
+
     let quickTopics = [
         ("Greetings", "👋"), ("Food", "🍕"), ("Travel", "✈️"), ("Technology", "💻"),
         ("Work", "💼"), ("Health", "🏥"), ("Home", "🏠"), ("Nature", "🌿"),

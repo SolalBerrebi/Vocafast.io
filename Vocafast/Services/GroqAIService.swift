@@ -55,9 +55,20 @@ final class GroqAIService: AIService {
         let nativeName = Config.languageName(for: nativeLang)
 
         let prompt = """
-        You are a vocabulary extraction assistant. Analyze this image which may contain a vocabulary table, word list, flash card, text, signs, labels, or objects.
+        You are a vocabulary extraction assistant for language learners. Analyze this image and extract useful vocabulary from it.
 
-        Extract all word-translation pairs you can find.
+        The image could be ANYTHING from real life — a restaurant menu, a street sign, a product label, a textbook page, a newspaper, a handwritten note, a screenshot, a flash card, or any scene with visible text.
+
+        Your job: Find text in the image and turn it into useful vocabulary for someone learning \(targetName).
+
+        EXTRACTION STRATEGY:
+        1. Menus & food items: Extract dish names, ingredients, and food-related words.
+        2. Signs & labels: Extract the words/phrases on signs.
+        3. Textbook/book pages: Extract the most useful vocabulary words and expressions.
+        4. Vocabulary tables or word lists: Extract each row/item as a pair.
+        5. Product labels: Extract product names, descriptions, ingredients.
+        6. Any other text: Extract the most useful, learnable words.
+        7. Scenes with objects: If the image shows objects but no text, name the visible objects as vocabulary.
 
         IMPORTANT RULES:
         - Items may be single words OR multi-word expressions/phrases. Extract expressions as-is — do NOT split them into individual words.
@@ -66,11 +77,7 @@ final class GroqAIService: AIService {
           - Words in \(nativeName) → put in "translation" field, translate to \(targetName) for "word".
           - Words in a third language → translate to both fields appropriately.
         - The "word" field MUST always end up in \(targetName). The "translation" field MUST always end up in \(nativeName).
-
-        Extraction guidelines:
-        - If the image contains a table with columns, extract each row as a pair.
-        - If the image contains a list of words without translations, provide the \(nativeName) translation for each word.
-        - If the image contains text/paragraph, extract the key vocabulary words and expressions, then translate them.
+        - Focus on PRACTICAL vocabulary a language learner would benefit from knowing.
 
         Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields.
 

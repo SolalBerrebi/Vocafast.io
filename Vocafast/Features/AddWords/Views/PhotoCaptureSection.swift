@@ -3,9 +3,42 @@ import SwiftUI
 struct PhotoCaptureSection: View {
     @ObservedObject var viewModel: AddWordsViewModel
 
+    private let useCases: [(icon: String, label: String)] = [
+        ("fork.knife", "Restaurant menus"),
+        ("signpost.right.fill", "Street signs"),
+        ("book.fill", "Textbook pages"),
+        ("tag.fill", "Product labels"),
+        ("newspaper.fill", "Newspapers"),
+        ("map.fill", "Maps & guides"),
+    ]
+
     var body: some View {
         VStack(spacing: 16) {
             if viewModel.extractedWords.isEmpty && viewModel.selectedImage == nil {
+                // Description
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Point your camera at real-world text and AI will find the words worth learning.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    // Use case grid
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
+                        ForEach(useCases, id: \.label) { item in
+                            HStack(spacing: 8) {
+                                Image(systemName: item.icon)
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                                    .frame(width: 16)
+                                Text(item.label)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+
                 // Camera/Gallery buttons
                 HStack(spacing: 16) {
                     Button {
@@ -13,9 +46,9 @@ struct PhotoCaptureSection: View {
                     } label: {
                         VStack(spacing: 8) {
                             Image(systemName: "camera.fill")
-                                .font(.title)
-                            Text("Camera")
-                                .font(.subheadline)
+                                .font(.title2)
+                            Text("Take Photo")
+                                .font(.subheadline.weight(.medium))
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 100)
@@ -29,9 +62,9 @@ struct PhotoCaptureSection: View {
                     } label: {
                         VStack(spacing: 8) {
                             Image(systemName: "photo.on.rectangle")
-                                .font(.title)
+                                .font(.title2)
                             Text("Gallery")
-                                .font(.subheadline)
+                                .font(.subheadline.weight(.medium))
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 100)

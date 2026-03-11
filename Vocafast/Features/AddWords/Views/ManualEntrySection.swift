@@ -5,6 +5,13 @@ struct ManualEntrySection: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            // Description
+            Text("Add a single word with its translation. Use this when you encounter a new word you want to remember.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+
             if let error = viewModel.errorMessage {
                 Text(error)
                     .font(.callout)

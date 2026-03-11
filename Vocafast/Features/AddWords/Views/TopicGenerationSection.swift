@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct TopicGenerationSection: View {
     @ObservedObject var viewModel: AddWordsViewModel
@@ -6,9 +7,17 @@ struct TopicGenerationSection: View {
     var body: some View {
         VStack(spacing: 16) {
             if viewModel.extractedWords.isEmpty {
+                // Description
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Describe any topic and AI generates vocabulary instantly. The more specific, the better.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+
                 // Custom topic input
                 HStack {
-                    TextField("Enter a topic...", text: $viewModel.topicInput)
+                    TextField("e.g. cooking, animals, at the airport...", text: $viewModel.topicInput)
                         .textFieldStyle(.roundedBorder)
 
                     Button("Go") {
@@ -22,7 +31,7 @@ struct TopicGenerationSection: View {
 
                 // Level selector
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Vocabulary Level")
+                    Text("Difficulty")
                         .font(.subheadline.weight(.semibold))
 
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -37,7 +46,7 @@ struct TopicGenerationSection: View {
                                         .padding(.vertical, 8)
                                         .background(
                                             Capsule()
-                                                .fill(viewModel.selectedLevel == id ? Color.accentColor : Color(.systemGray6))
+                                                .fill(viewModel.selectedLevel == id ? Color.accentColor : Color(UIColor.systemGray6))
                                         )
                                         .foregroundStyle(viewModel.selectedLevel == id ? .white : .primary)
                                 }
@@ -50,7 +59,7 @@ struct TopicGenerationSection: View {
                 // Word count slider
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text("Word Count")
+                        Text("Number of words")
                             .font(.subheadline.weight(.semibold))
                         Spacer()
                         Text("\(Int(viewModel.topicWordCount))")
@@ -81,7 +90,7 @@ struct TopicGenerationSection: View {
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
-                                .background(Color(.systemGray6))
+                                .background(Color(UIColor.systemGray6))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
                             .disabled(viewModel.isLoading)
@@ -120,7 +129,7 @@ struct TopicGenerationSection: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)
-                    .background(Color(.systemGray5))
+                    .background(Color(UIColor.systemGray5))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                     Button {

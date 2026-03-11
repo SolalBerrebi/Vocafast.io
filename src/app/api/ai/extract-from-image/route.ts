@@ -51,9 +51,20 @@ export async function POST(request: NextRequest) {
     const targetName = getLangName(targetLang);
     const nativeName = getLangName(nativeLang);
 
-    const prompt = `You are a vocabulary extraction assistant. Analyze this image which may contain a vocabulary table, word list, flash card, text, signs, labels, or objects.
+    const prompt = `You are a vocabulary extraction assistant for language learners. Analyze this image and extract useful vocabulary from it.
 
-Extract all word-translation pairs you can find.
+The image could be ANYTHING from real life — a restaurant menu, a street sign, a product label, a textbook page, a newspaper, a handwritten note, a screenshot, a flash card, or any scene with visible text.
+
+Your job: Find text in the image and turn it into useful vocabulary for someone learning ${targetName}.
+
+EXTRACTION STRATEGY:
+1. **Menus & food items**: Extract dish names, ingredients, and food-related words. These are great vocabulary.
+2. **Signs & labels**: Extract the words/phrases on signs, even short ones (e.g. "Exit", "Open", "No parking").
+3. **Textbook/book pages**: Extract the most useful vocabulary words and expressions.
+4. **Vocabulary tables or word lists**: Extract each row/item as a pair.
+5. **Product labels**: Extract product names, descriptions, ingredients.
+6. **Any other text**: Extract the most useful, learnable words — skip articles, prepositions, and very common filler words unless they're genuinely useful for a learner.
+7. **Scenes with objects**: If the image shows objects (food, animals, tools, etc.) but no text, name the visible objects as vocabulary.
 
 IMPORTANT RULES:
 - Items may be single words OR multi-word expressions/phrases (e.g. "to take off", "faire la grasse matinée", "להוציא לפועל"). Extract expressions as-is — do NOT split them into individual words.
@@ -64,12 +75,7 @@ IMPORTANT RULES:
   - Do NOT assume all text is in one language. Detect per-item.
 - The "word" field MUST always end up in ${targetName}. The "translation" field MUST always end up in ${nativeName}.
 - If the image contains verb conjugations or irregular forms, preserve them (e.g. "go / went / gone").
-
-Extraction guidelines:
-- If the image contains a table with columns, extract each row as a pair.
-- If the image contains a list of words without translations, provide the ${nativeName} translation for each word.
-- If the image contains text/paragraph, extract the key vocabulary words and expressions, then translate them.
-- If the image shows a flash card with a word or expression, extract it as a single entry.
+- Focus on PRACTICAL vocabulary a language learner would benefit from knowing.
 
 Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields.
 Example: [{"word":"שלום","translation":"hello"},{"word":"לקחת הפסקה","translation":"to take a break"}]

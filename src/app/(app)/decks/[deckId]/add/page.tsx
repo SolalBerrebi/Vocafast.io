@@ -15,7 +15,6 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { TOPICS } from "@/lib/ai/topics";
 import type { WordSourceType } from "@/types/database";
-import CoachMark from "@/components/ui/CoachMark";
 
 interface ExtractedWord {
   word: string;
@@ -23,11 +22,16 @@ interface ExtractedWord {
   selected: boolean;
 }
 
+type CaptureMethod = "topic" | "photo" | "text" | "manual" | null;
+
 export default function AddWordsPage() {
   const { deckId } = useParams<{ deckId: string }>();
   const router = useRouter();
   const [nativeLang, setNativeLang] = useState("en");
   const [targetLang, setTargetLang] = useState("");
+
+  // Active method (null = method picker)
+  const [activeMethod, setActiveMethod] = useState<CaptureMethod>(null);
 
   // Manual entry state
   const [word, setWord] = useState("");
@@ -41,7 +45,7 @@ export default function AddWordsPage() {
   const [extracting, setExtracting] = useState(false);
   const [extracted, setExtracted] = useState<ExtractedWord[]>([]);
 
-  // Photo capture state (CAPT-04 to CAPT-07)
+  // Photo capture state
   const [photoProcessing, setPhotoProcessing] = useState(false);
   const [photoProgress, setPhotoProgress] = useState("");
   const [photoError, setPhotoError] = useState("");
@@ -59,11 +63,11 @@ export default function AddWordsPage() {
   const [wordCount, setWordCount] = useState(15);
   const [vocabLevel, setVocabLevel] = useState("beginner");
 
-  // Active tab
-  const [activeTab, setActiveTab] = useState<"manual" | "photo" | "text" | "topic">("manual");
-
   // Existing words in deck (for dedup)
   const [existingWords, setExistingWords] = useState<string[]>([]);
+
+  // Text error
+  const [textError, setTextError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,7 +84,6 @@ export default function AddWordsPage() {
       if (profileRes.data) setNativeLang(profileRes.data.native_lang);
       if (wordsRes.data) setExistingWords(wordsRes.data.map((w) => w.word.toLowerCase()));
 
-      // Get the target language from the deck's own environment (not the global active one)
       if (deckRes.data) {
         const { data: envData } = await supabase
           .from("language_environments")
@@ -119,7 +122,6 @@ export default function AddWordsPage() {
     setLoading(false);
   };
 
-  // Resize image client-side to avoid exceeding API body limits
   const compressImage = (file: File, maxDim = 1200): Promise<{ base64: string; mimeType: string; dataUrl: string }> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -127,7 +129,6 @@ export default function AddWordsPage() {
         const canvas = document.createElement("canvas");
         let { width, height } = img;
 
-        // Scale down if needed
         if (width > maxDim || height > maxDim) {
           if (width > height) {
             height = Math.round((height * maxDim) / width);
@@ -152,7 +153,6 @@ export default function AddWordsPage() {
     });
   };
 
-  // CAPT-04 to CAPT-07: Photo capture & Gemini Vision extraction
   const handlePhotoSelected = async (file: File) => {
     if (!targetLang) return;
 
@@ -162,7 +162,6 @@ export default function AddWordsPage() {
     setPhotoError("");
 
     try {
-      // Compress image to reasonable size for API upload
       const { base64, mimeType, dataUrl } = await compressImage(file);
       setPhotoPreview(dataUrl);
 
@@ -209,7 +208,7 @@ export default function AddWordsPage() {
         setPhotoProgress("");
         setPhotoError("");
       } else {
-        setPhotoError("No word pairs found. Try a photo with a vocabulary table.");
+        setPhotoError("No words found in this image. Try a different photo.");
         setPhotoProgress("");
       }
     } catch (err) {
@@ -245,10 +244,6 @@ export default function AddWordsPage() {
     }
   };
 
-  // Text extraction state
-  const [textError, setTextError] = useState("");
-
-  // CAPT-01: Text extraction via Groq LLM
   const handleExtract = async () => {
     if (!textInput.trim() || !targetLang) return;
     setExtracting(true);
@@ -281,7 +276,6 @@ export default function AddWordsPage() {
     setExtracting(false);
   };
 
-  // CAPT-03: Save confirmed AI words
   const handleSaveExtracted = async (words: ExtractedWord[], sourceType: WordSourceType) => {
     const selected = words.filter((w) => w.selected);
     if (selected.length === 0) return;
@@ -301,7 +295,6 @@ export default function AddWordsPage() {
         ...selected.map((w) => ({ word: w.word, translation: w.translation })),
         ...prev,
       ]);
-      // Track newly added words to prevent future duplicates
       setExistingWords((prev) => [
         ...prev,
         ...selected.map((w) => w.word.toLowerCase()),
@@ -316,7 +309,6 @@ export default function AddWordsPage() {
     }
   };
 
-  // Topic generation (predefined or custom)
   const handleGenerateTopic = async (topicName: string) => {
     if (!targetLang) return;
     setSelectedTopic(topicName);
@@ -339,7 +331,6 @@ export default function AddWordsPage() {
       if (data.error) {
         setTopicError(data.error);
       } else if (data.words && data.words.length > 0) {
-        // Filter out words already in the deck (client-side safety net)
         const filtered = data.words.filter(
           (w: { word: string }) => !existingWords.includes(w.word.toLowerCase()),
         );
@@ -368,325 +359,138 @@ export default function AddWordsPage() {
     );
   };
 
+  const handleBackToMethods = () => {
+    setActiveMethod(null);
+  };
+
   return (
     <>
       <div className="px-5 pt-2 pb-2">
         {/* Back button */}
         <button
-          onClick={() => router.back()}
-          className="flex items-center gap-1 text-blue-500 font-medium text-[15px] py-2 -ml-1 mb-3"
+          onClick={() => activeMethod ? handleBackToMethods() : router.back()}
+          className="flex items-center gap-1 text-blue-500 font-medium text-[15px] py-2 -ml-1 mb-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          Back
+          {activeMethod ? "All Methods" : "Back"}
         </button>
 
-        <h1 className="text-2xl font-bold tracking-tight mb-4">Add Words</h1>
-
-        <CoachMark id="add-words-tabs" className="mb-4">
-          <p className="font-semibold text-[15px] mb-1">Multiple ways to add words</p>
-          <p className="text-[13px] text-blue-100 leading-relaxed">
-            Type them manually, snap a photo, paste text, or let AI generate words by topic. Switch between methods using the tabs below.
-          </p>
-        </CoachMark>
-
-        {/* Tab selector */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-1">
-          {(["manual", "photo", "text", "topic"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 px-2 rounded-lg text-[12px] font-semibold ${
-                activeTab === tab
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500"
-              }`}
-            >
-              {tab === "manual" ? "Manual" : tab === "photo" ? "Photo" : tab === "text" ? "Text" : "Topics"}
-            </button>
-          ))}
-        </div>
+        {!activeMethod && (
+          <>
+            <h1 className="text-[26px] font-bold tracking-tight mb-1">Add Words</h1>
+            <p className="text-[14px] text-gray-500 leading-snug mb-5">
+              Choose how you want to add vocabulary to your deck. AI does the heavy lifting.
+            </p>
+          </>
+        )}
       </div>
 
-      {/* Manual Entry */}
-      {activeTab === "manual" && (
-        <>
-          <List strongIos insetIos>
-            <ListInput
-              type="text"
-              placeholder="Word (target language)"
-              value={word}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setWord(e.target.value)
-              }
-            />
-            <ListInput
-              type="text"
-              placeholder="Translation (your language)"
-              value={translation}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setTranslation(e.target.value)
-              }
-            />
-            <ListInput
-              type="text"
-              placeholder="Context sentence (optional)"
-              value={context}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setContext(e.target.value)
-              }
-            />
-          </List>
-          <Block>
-            <Button
-              large
-              onClick={handleAdd}
-              disabled={!word.trim() || !translation.trim() || loading}
-            >
-              {loading ? "Adding..." : "Add Word"}
-            </Button>
-          </Block>
-        </>
-      )}
-
-      {/* Photo Capture (CAPT-04 to CAPT-07) */}
-      {activeTab === "photo" && (
-        <>
-          {photoWords.length === 0 ? (
-            <>
-              <Block className="text-center">
-                <p className="text-gray-500 text-sm mb-4">
-                  Take a photo of a vocabulary table from a book or document.
-                  The app will extract words and translations automatically.
-                </p>
-
-                {/* Photo preview */}
-                {photoPreview && (
-                  <div className="mb-4 rounded-2xl overflow-hidden border border-gray-200">
-                    <img
-                      src={photoPreview}
-                      alt="Captured"
-                      className="w-full max-h-64 object-contain bg-gray-50"
-                    />
-                  </div>
-                )}
-
-                {/* Hidden file inputs */}
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handlePhotoSelected(file);
-                  }}
-                />
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handlePhotoSelected(file);
-                  }}
-                />
-
-                {/* Error message */}
-                {photoError && (
-                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                    <p className="text-sm text-red-600">{photoError}</p>
-                  </div>
-                )}
-
-                {photoProcessing ? (
-                  <div className="flex flex-col items-center gap-3 py-4">
-                    <Preloader />
-                    <p className="text-sm text-gray-500">{photoProgress}</p>
-                  </div>
-                ) : (
-                  <div className="flex gap-3">
-                    <Button
-                      className="flex-1"
-                      large
-                      onClick={() => cameraInputRef.current?.click()}
-                    >
-                      <span className="flex items-center gap-2 justify-center">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Camera
-                      </span>
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      large
-                      outline
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <span className="flex items-center gap-2 justify-center">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Gallery
-                      </span>
-                    </Button>
-                  </div>
-                )}
-              </Block>
-            </>
-          ) : (
-            <>
-              {/* Photo review with preview */}
-              {photoPreview && (
-                <Block>
-                  <div className="rounded-2xl overflow-hidden border border-gray-200 mb-2">
-                    <img
-                      src={photoPreview}
-                      alt="Source"
-                      className="w-full max-h-32 object-contain bg-gray-50"
-                    />
-                  </div>
-                </Block>
-              )}
-              <BlockTitle>
-                Review Words ({photoWords.filter((w) => w.selected).length} selected)
-              </BlockTitle>
-              <List strongIos insetIos>
-                {photoWords.map((w, i) => (
-                  <ListItem
-                    key={i}
-                    title={w.word}
-                    after={w.translation}
-                    media={
-                      <Checkbox
-                        checked={w.selected}
-                        onChange={() => toggleWord(i, "photo")}
-                      />
-                    }
-                  />
-                ))}
-              </List>
-              <Block className="flex gap-2">
-                <Button
-                  className="flex-1"
-                  onClick={handleSavePhotoWords}
-                >
-                  Save Selected
-                </Button>
-                <Button
-                  className="flex-1"
-                  outline
-                  onClick={() => {
-                    setPhotoWords([]);
-                    setPhotoPreview(null);
-                  }}
-                >
-                  Retake
-                </Button>
-              </Block>
-            </>
-          )}
-        </>
-      )}
-
-      {/* Text Extraction (CAPT-01) */}
-      {activeTab === "text" && (
-        <>
-          <Block>
-            <p className="text-gray-500 text-sm mb-3">
-              Paste any text — a word list, a paragraph, or even sentences. AI will extract vocabulary and translate it for you.
-            </p>
-            <textarea
-              className="w-full h-32 p-3.5 border border-gray-200 bg-gray-50 rounded-xl text-[16px] resize-none focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
-              placeholder="e.g. words separated by commas, a paragraph from a book, a list of verbs..."
-              value={textInput}
-              onChange={(e) => {
-                setTextInput(e.target.value);
-                setTextError("");
-              }}
-            />
-          </Block>
-
-          {textError && (
-            <Block>
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-sm text-red-600">{textError}</p>
+      {/* ===== METHOD PICKER ===== */}
+      {!activeMethod && (
+        <div className="px-5 pb-6">
+          {/* PRIMARY: Topic Generation */}
+          <button
+            onClick={() => setActiveMethod("topic")}
+            className="w-full text-left mb-3 rounded-2xl border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                </svg>
               </div>
-            </Block>
-          )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[16px] font-bold text-gray-900">AI Topic Generator</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Fastest</span>
+                </div>
+                <p className="text-[13px] text-gray-500 leading-snug">
+                  Type any topic — &quot;cooking&quot;, &quot;at the airport&quot;, &quot;business meetings&quot; — and get instant vocabulary with translations. Choose your difficulty level.
+                </p>
+              </div>
+            </div>
+          </button>
 
-          <Block>
-            <Button
-              large
-              onClick={handleExtract}
-              disabled={!textInput.trim() || extracting}
+          {/* PRIMARY: Photo Scan */}
+          <button
+            onClick={() => setActiveMethod("photo")}
+            className="w-full text-left mb-3 rounded-2xl border-2 border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 p-4 active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[16px] font-bold text-gray-900">Smart Photo Scan</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">Magic</span>
+                </div>
+                <p className="text-[13px] text-gray-500 leading-snug">
+                  Snap a photo of anything — a restaurant menu, a street sign, a textbook page, product labels — and AI extracts the vocabulary for you.
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* SECONDARY ROW: Text + Manual */}
+          <div className="flex gap-2.5">
+            <button
+              onClick={() => setActiveMethod("text")}
+              className="flex-1 text-left rounded-2xl border border-gray-200 bg-white p-3.5 active:scale-[0.98] transition-transform"
             >
-              {extracting ? (
-                <span className="flex items-center gap-2 justify-center">
-                  <Preloader /> Extracting...
-                </span>
-              ) : (
-                "Extract & Translate"
-              )}
-            </Button>
-          </Block>
+              <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center mb-2.5">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+              </div>
+              <span className="text-[14px] font-bold text-gray-900 block mb-0.5">Paste Text</span>
+              <span className="text-[12px] text-gray-400 leading-snug block">Paste a word list or paragraph</span>
+            </button>
 
-          {/* CAPT-03: Review extracted words */}
-          {extracted.length > 0 && (
-            <>
-              <BlockTitle>
-                Review Words ({extracted.filter((w) => w.selected).length} selected)
-              </BlockTitle>
-              <List strongIos insetIos>
-                {extracted.map((w, i) => (
-                  <ListItem
-                    key={i}
-                    title={w.word}
-                    after={w.translation}
-                    media={
-                      <Checkbox
-                        checked={w.selected}
-                        onChange={() => toggleWord(i, "extracted")}
-                      />
-                    }
-                  />
-                ))}
-              </List>
-              <Block className="flex gap-2">
-                <Button
-                  className="flex-1"
-                  onClick={() => handleSaveExtracted(extracted, "text")}
-                >
-                  Save Selected
-                </Button>
-                <Button
-                  className="flex-1"
-                  outline
-                  onClick={() => setExtracted([])}
-                >
-                  Clear
-                </Button>
-              </Block>
-            </>
+            <button
+              onClick={() => setActiveMethod("manual")}
+              className="flex-1 text-left rounded-2xl border border-gray-200 bg-white p-3.5 active:scale-[0.98] transition-transform"
+            >
+              <div className="w-9 h-9 rounded-lg bg-violet-500 flex items-center justify-center mb-2.5">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                </svg>
+              </div>
+              <span className="text-[14px] font-bold text-gray-900 block mb-0.5">Type Manually</span>
+              <span className="text-[12px] text-gray-400 leading-snug block">Add words one by one</span>
+            </button>
+          </div>
+
+          {/* Word count badge */}
+          {existingWords.length > 0 && (
+            <div className="mt-4 text-center">
+              <span className="text-[12px] text-gray-400">
+                {existingWords.length} word{existingWords.length !== 1 ? "s" : ""} already in this deck
+              </span>
+            </div>
           )}
-        </>
+        </div>
       )}
 
-      {/* Topic Generation (CAPT-12/13) */}
-      {activeTab === "topic" && (
+      {/* ===== TOPIC GENERATION ===== */}
+      {activeMethod === "topic" && (
         <>
           {topicWords.length === 0 ? (
             <>
+              <div className="px-5 mb-1">
+                <h2 className="text-[20px] font-bold tracking-tight mb-1">AI Topic Generator</h2>
+                <p className="text-[13px] text-gray-400 leading-snug">
+                  Describe any topic and AI generates vocabulary instantly. The more specific, the better — try &quot;ordering food at a restaurant&quot; or &quot;job interview phrases&quot;.
+                </p>
+              </div>
+
               {/* Custom topic input */}
               <Block>
-                <p className="text-gray-500 text-sm mb-3">
-                  Describe a topic and AI will generate vocabulary for you.
-                </p>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -847,7 +651,305 @@ export default function AddWordsPage() {
         </>
       )}
 
-      {/* Recently added (shown across all tabs) */}
+      {/* ===== PHOTO CAPTURE ===== */}
+      {activeMethod === "photo" && (
+        <>
+          {photoWords.length === 0 ? (
+            <>
+              <div className="px-5 mb-1">
+                <h2 className="text-[20px] font-bold tracking-tight mb-1">Smart Photo Scan</h2>
+                <p className="text-[13px] text-gray-400 leading-snug">
+                  Point your camera at real-world text and AI will find the words worth learning. Works great with:
+                </p>
+              </div>
+
+              {/* Use case examples */}
+              <Block>
+                <div className="grid grid-cols-2 gap-2 mb-5">
+                  {[
+                    { icon: "🍽️", label: "Restaurant menus" },
+                    { icon: "🛣️", label: "Street signs" },
+                    { icon: "📖", label: "Textbook pages" },
+                    { icon: "🏷️", label: "Product labels" },
+                    { icon: "📰", label: "Newspapers" },
+                    { icon: "🗺️", label: "Maps & guides" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-2 py-1.5">
+                      <span className="text-[16px]">{item.icon}</span>
+                      <span className="text-[13px] text-gray-600">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Photo preview */}
+                {photoPreview && (
+                  <div className="mb-4 rounded-2xl overflow-hidden border border-gray-200">
+                    <img
+                      src={photoPreview}
+                      alt="Captured"
+                      className="w-full max-h-64 object-contain bg-gray-50"
+                    />
+                  </div>
+                )}
+
+                {/* Hidden file inputs */}
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePhotoSelected(file);
+                  }}
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePhotoSelected(file);
+                  }}
+                />
+
+                {/* Error message */}
+                {photoError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm text-red-600">{photoError}</p>
+                  </div>
+                )}
+
+                {photoProcessing ? (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <Preloader />
+                    <p className="text-sm text-gray-500">{photoProgress}</p>
+                  </div>
+                ) : (
+                  <div className="flex gap-3">
+                    <Button
+                      className="flex-1"
+                      large
+                      onClick={() => cameraInputRef.current?.click()}
+                    >
+                      <span className="flex items-center gap-2 justify-center">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Take Photo
+                      </span>
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      large
+                      outline
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <span className="flex items-center gap-2 justify-center">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Gallery
+                      </span>
+                    </Button>
+                  </div>
+                )}
+              </Block>
+            </>
+          ) : (
+            <>
+              {/* Photo review with preview */}
+              {photoPreview && (
+                <Block>
+                  <div className="rounded-2xl overflow-hidden border border-gray-200 mb-2">
+                    <img
+                      src={photoPreview}
+                      alt="Source"
+                      className="w-full max-h-32 object-contain bg-gray-50"
+                    />
+                  </div>
+                </Block>
+              )}
+              <BlockTitle>
+                Review Words ({photoWords.filter((w) => w.selected).length} selected)
+              </BlockTitle>
+              <List strongIos insetIos>
+                {photoWords.map((w, i) => (
+                  <ListItem
+                    key={i}
+                    title={w.word}
+                    after={w.translation}
+                    media={
+                      <Checkbox
+                        checked={w.selected}
+                        onChange={() => toggleWord(i, "photo")}
+                      />
+                    }
+                  />
+                ))}
+              </List>
+              <Block className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={handleSavePhotoWords}
+                >
+                  Save Selected
+                </Button>
+                <Button
+                  className="flex-1"
+                  outline
+                  onClick={() => {
+                    setPhotoWords([]);
+                    setPhotoPreview(null);
+                  }}
+                >
+                  Retake
+                </Button>
+              </Block>
+            </>
+          )}
+        </>
+      )}
+
+      {/* ===== TEXT EXTRACTION ===== */}
+      {activeMethod === "text" && (
+        <>
+          <div className="px-5 mb-1">
+            <h2 className="text-[20px] font-bold tracking-tight mb-1">Paste Text</h2>
+            <p className="text-[13px] text-gray-400 leading-snug">
+              Paste any text — a word list, a paragraph from a book, sentences from a chat. AI extracts and translates the vocabulary.
+            </p>
+          </div>
+
+          <Block>
+            <textarea
+              className="w-full h-32 p-3.5 border border-gray-200 bg-gray-50 rounded-xl text-[16px] resize-none focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
+              placeholder="e.g. words separated by commas, a paragraph from a book, a list of verbs..."
+              value={textInput}
+              onChange={(e) => {
+                setTextInput(e.target.value);
+                setTextError("");
+              }}
+            />
+          </Block>
+
+          {textError && (
+            <Block>
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-sm text-red-600">{textError}</p>
+              </div>
+            </Block>
+          )}
+
+          <Block>
+            <Button
+              large
+              onClick={handleExtract}
+              disabled={!textInput.trim() || extracting}
+            >
+              {extracting ? (
+                <span className="flex items-center gap-2 justify-center">
+                  <Preloader /> Extracting...
+                </span>
+              ) : (
+                "Extract & Translate"
+              )}
+            </Button>
+          </Block>
+
+          {/* Review extracted words */}
+          {extracted.length > 0 && (
+            <>
+              <BlockTitle>
+                Review Words ({extracted.filter((w) => w.selected).length} selected)
+              </BlockTitle>
+              <List strongIos insetIos>
+                {extracted.map((w, i) => (
+                  <ListItem
+                    key={i}
+                    title={w.word}
+                    after={w.translation}
+                    media={
+                      <Checkbox
+                        checked={w.selected}
+                        onChange={() => toggleWord(i, "extracted")}
+                      />
+                    }
+                  />
+                ))}
+              </List>
+              <Block className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  onClick={() => handleSaveExtracted(extracted, "text")}
+                >
+                  Save Selected
+                </Button>
+                <Button
+                  className="flex-1"
+                  outline
+                  onClick={() => setExtracted([])}
+                >
+                  Clear
+                </Button>
+              </Block>
+            </>
+          )}
+        </>
+      )}
+
+      {/* ===== MANUAL ENTRY ===== */}
+      {activeMethod === "manual" && (
+        <>
+          <div className="px-5 mb-1">
+            <h2 className="text-[20px] font-bold tracking-tight mb-1">Type Manually</h2>
+            <p className="text-[13px] text-gray-400 leading-snug">
+              Add a single word with its translation. Use this when you encounter a new word you want to remember.
+            </p>
+          </div>
+
+          <List strongIos insetIos>
+            <ListInput
+              type="text"
+              placeholder="Word (target language)"
+              value={word}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setWord(e.target.value)
+              }
+            />
+            <ListInput
+              type="text"
+              placeholder="Translation (your language)"
+              value={translation}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setTranslation(e.target.value)
+              }
+            />
+            <ListInput
+              type="text"
+              placeholder="Context sentence (optional)"
+              value={context}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setContext(e.target.value)
+              }
+            />
+          </List>
+          <Block>
+            <Button
+              large
+              onClick={handleAdd}
+              disabled={!word.trim() || !translation.trim() || loading}
+            >
+              {loading ? "Adding..." : "Add Word"}
+            </Button>
+          </Block>
+        </>
+      )}
+
+      {/* Recently added (shown across all methods) */}
       {added.length > 0 && (
         <>
           <BlockTitle>Recently Added</BlockTitle>
