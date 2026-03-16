@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirm email change</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f5; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5; padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding:36px 40px 20px;">
+              <img src="https://vocafast.io/logo.png" alt="Vocafast" width="64" height="64" style="display:block; border-radius:12px;" />
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:0 40px 8px;">
+              <h1 style="margin:0; font-size:22px; font-weight:700; color:#18181b;">Confirm Email Change</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:8px 40px 24px;">
+              <p style="margin:0; font-size:15px; line-height:24px; color:#52525b; text-align:center;">
+                You requested to change your email address. Click the button below to confirm this change.
+              </p>
+            </td>
+          </tr>
+          <!-- Button -->
+          <tr>
+            <td align="center" style="padding:0 40px 32px;">
+              <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block; background-color:#2563eb; color:#ffffff; font-size:15px; font-weight:600; text-decoration:none; padding:12px 32px; border-radius:10px;">
+                Confirm Email Change
+              </a>
+            </td>
+          </tr>
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <hr style="border:none; border-top:1px solid #e4e4e7; margin:0;" />
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 40px 36px;">
+              <p style="margin:0; font-size:12px; line-height:18px; color:#a1a1aa; text-align:center;">
+                If you didn't request this change, please secure your account immediately by resetting your password.
+              </p>
+              <p style="margin:12px 0 0; font-size:12px; line-height:18px; color:#a1a1aa; text-align:center;">
+                Vocafast &mdash; Learn vocabulary, fast.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
