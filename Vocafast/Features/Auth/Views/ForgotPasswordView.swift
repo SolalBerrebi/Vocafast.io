@@ -9,7 +9,7 @@ struct ForgotPasswordView: View {
             VStack(spacing: 24) {
                 Spacer().frame(height: 60)
 
-                Text("Reset Password")
+                Text(L("auth_reset_password"))
                     .font(.largeTitle.bold())
 
                 if viewModel.showSignupSuccess {
@@ -18,14 +18,14 @@ struct ForgotPasswordView: View {
                             .font(.system(size: 60))
                             .foregroundStyle(Color.accentColor)
 
-                        Text("Check your email")
+                        Text(L("auth_check_email"))
                             .font(.title2.bold())
 
-                        Text("We've sent a password reset link to \(viewModel.email).")
+                        Text(LF("auth_reset_sent", viewModel.email))
                             .multilineTextAlignment(.center)
                             .foregroundStyle(.secondary)
 
-                        Button("Back to Login") {
+                        Button(L("auth_back_to_login")) {
                             dismiss()
                         }
                         .font(.headline)
@@ -37,7 +37,7 @@ struct ForgotPasswordView: View {
                     }
                     .padding(.top, 40)
                 } else {
-                    Text("Enter your email address and we'll send you a link to reset your password.")
+                    Text(L("auth_reset_desc"))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
@@ -51,7 +51,7 @@ struct ForgotPasswordView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
 
-                    TextField("Email", text: $viewModel.email)
+                    TextField(L("auth_email"), text: $viewModel.email)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
@@ -64,7 +64,7 @@ struct ForgotPasswordView: View {
                             if viewModel.isLoading {
                                 ProgressView().tint(.white)
                             } else {
-                                Text("Send Reset Link")
+                                Text(L("auth_send_reset_link"))
                             }
                         }
                         .font(.headline)
@@ -76,7 +76,7 @@ struct ForgotPasswordView: View {
                     }
                     .disabled(viewModel.isLoading)
 
-                    Button("Back to Login") {
+                    Button(L("auth_back_to_login")) {
                         dismiss()
                     }
                     .font(.subheadline)

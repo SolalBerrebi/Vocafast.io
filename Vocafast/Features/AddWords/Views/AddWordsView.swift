@@ -5,6 +5,9 @@ struct AddWordsView: View {
     let deckId: UUID
     @StateObject private var viewModel: AddWordsViewModel
     @State private var selectedMethod: CaptureMethod? = nil
+    @State private var showAIConsent = false
+    @State private var pendingAIMethod: CaptureMethod?
+    @State private var navigateToTraining = false
 
     enum CaptureMethod: Hashable {
         case topic, photo, text, manual
@@ -15,11 +18,25 @@ struct AddWordsView: View {
         _viewModel = StateObject(wrappedValue: AddWordsViewModel(deckId: deckId))
     }
 
+    private func selectMethod(_ method: CaptureMethod) {
+        let aiMethods: Set<CaptureMethod> = [.topic, .photo, .text]
+        if aiMethods.contains(method) && !AIConsentManager.shared.hasConsented {
+            pendingAIMethod = method
+            showAIConsent = true
+        } else {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedMethod = method
+            }
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 16) {
-                    if selectedMethod == nil {
+                    if viewModel.showSaveSuccess {
+                        saveSuccessView
+                    } else if selectedMethod == nil {
                         methodPicker
                     } else {
                         switch selectedMethod {
@@ -37,9 +54,9 @@ struct AddWordsView: View {
                     }
 
                     // Recently added
-                    if !viewModel.recentlyAdded.isEmpty {
+                    if !viewModel.recentlyAdded.isEmpty && !viewModel.showSaveSuccess {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Recently Added")
+                            Text(L("add_words_recently_added"))
                                 .font(.headline)
                                 .padding(.horizontal, 16)
 
@@ -61,10 +78,10 @@ struct AddWordsView: View {
                 .padding(.vertical, 16)
             }
         }
-        .navigationTitle(selectedMethod == nil ? "Add Words" : methodTitle)
-        .navigationBarBackButtonHidden(selectedMethod != nil)
+        .navigationTitle(viewModel.showSaveSuccess ? L("add_words_saved_title") : (selectedMethod == nil ? L("add_words_title") : methodTitle))
+        .navigationBarBackButtonHidden(selectedMethod != nil && !viewModel.showSaveSuccess)
         .toolbar {
-            if selectedMethod != nil {
+            if selectedMethod != nil && !viewModel.showSaveSuccess {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -75,11 +92,31 @@ struct AddWordsView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .fontWeight(.semibold)
-                            Text("All Methods")
+                            Text(L("add_words_all_methods"))
                         }
                     }
                 }
             }
+        }
+        .navigationDestination(isPresented: $navigateToTraining) {
+            TrainingLauncherView(deckId: deckId)
+        }
+        .sheet(isPresented: $showAIConsent) {
+            AIConsentSheet(
+                onAccept: {
+                    showAIConsent = false
+                    if let method = pendingAIMethod {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedMethod = method
+                        }
+                        pendingAIMethod = nil
+                    }
+                },
+                onDecline: {
+                    showAIConsent = false
+                    pendingAIMethod = nil
+                }
+            )
         }
         .task {
             await viewModel.loadExistingWords()
@@ -88,11 +125,65 @@ struct AddWordsView: View {
 
     private var methodTitle: String {
         switch selectedMethod {
-        case .topic: return "AI Topic Generator"
-        case .photo: return "Smart Photo Scan"
-        case .text: return "Paste Text"
-        case .manual: return "Type Manually"
-        case .none: return "Add Words"
+        case .topic: return L("add_words_topic_title")
+        case .photo: return L("add_words_photo_title")
+        case .text: return L("add_words_text_title")
+        case .manual: return L("add_words_manual_title")
+        case .none: return L("add_words_title")
+        }
+    }
+
+    // MARK: - Save Success
+
+    private var saveSuccessView: some View {
+        VStack(spacing: 24) {
+            Spacer().frame(height: 40)
+
+            ZStack {
+                Circle()
+                    .fill(Color.green.opacity(0.12))
+                    .frame(width: 80, height: 80)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 36, weight: .bold))
+                    .foregroundStyle(.green)
+            }
+
+            VStack(spacing: 8) {
+                Text(viewModel.lastSaveCount == 1 ? L("add_words_one_saved") : LF("add_words_many_saved", viewModel.lastSaveCount))
+                    .font(.title2.bold())
+                Text(L("add_words_ready_practice"))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            VStack(spacing: 12) {
+                Button {
+                    navigateToTraining = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                        Text(L("add_words_train_now"))
+                    }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .foregroundStyle(.white)
+                    .background(Color.accentColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.dismissSuccess()
+                    }
+                } label: {
+                    Text(L("add_words_add_more"))
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .padding(.horizontal, 16)
         }
     }
 
@@ -101,7 +192,7 @@ struct AddWordsView: View {
     private var methodPicker: some View {
         VStack(spacing: 12) {
             // Subtitle
-            Text("Choose how you want to add vocabulary. AI does the heavy lifting.")
+            Text(L("add_words_subtitle"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -110,9 +201,7 @@ struct AddWordsView: View {
 
             // PRIMARY: Topic Generation
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    selectedMethod = .topic
-                }
+                selectMethod(.topic)
             } label: {
                 HStack(alignment: .top, spacing: 14) {
                     ZStack {
@@ -126,10 +215,10 @@ struct AddWordsView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
-                            Text("AI Topic Generator")
+                            Text(L("add_words_topic_title"))
                                 .font(.body.weight(.bold))
                                 .foregroundStyle(.primary)
-                            Text("FASTEST")
+                            Text(L("add_words_badge_fastest"))
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundStyle(.blue)
                                 .padding(.horizontal, 6)
@@ -137,7 +226,7 @@ struct AddWordsView: View {
                                 .background(Color.blue.opacity(0.12))
                                 .clipShape(Capsule())
                         }
-                        Text("Type any topic — \"cooking\", \"at the airport\", \"business meetings\" — and get instant vocabulary with translations.")
+                        Text(L("add_words_topic_desc"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(3)
@@ -159,9 +248,7 @@ struct AddWordsView: View {
 
             // PRIMARY: Photo Scan
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    selectedMethod = .photo
-                }
+                selectMethod(.photo)
             } label: {
                 HStack(alignment: .top, spacing: 14) {
                     ZStack {
@@ -175,10 +262,10 @@ struct AddWordsView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
-                            Text("Smart Photo Scan")
+                            Text(L("add_words_photo_title"))
                                 .font(.body.weight(.bold))
                                 .foregroundStyle(.primary)
-                            Text("MAGIC")
+                            Text(L("add_words_badge_magic"))
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundStyle(.orange)
                                 .padding(.horizontal, 6)
@@ -186,7 +273,7 @@ struct AddWordsView: View {
                                 .background(Color.orange.opacity(0.12))
                                 .clipShape(Capsule())
                         }
-                        Text("Snap a photo of a restaurant menu, street sign, textbook, or product label — AI extracts the vocabulary for you.")
+                        Text(L("add_words_photo_desc"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(3)
@@ -210,9 +297,7 @@ struct AddWordsView: View {
             HStack(spacing: 10) {
                 // Paste Text
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedMethod = .text
-                    }
+                    selectMethod(.text)
                 } label: {
                     VStack(alignment: .leading, spacing: 8) {
                         ZStack {
@@ -223,10 +308,10 @@ struct AddWordsView: View {
                                 .font(.body.weight(.semibold))
                                 .foregroundStyle(.white)
                         }
-                        Text("Paste Text")
+                        Text(L("add_words_text_title"))
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.primary)
-                        Text("Paste a word list or paragraph")
+                        Text(L("add_words_text_desc"))
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
                             .lineLimit(2)
@@ -246,9 +331,7 @@ struct AddWordsView: View {
 
                 // Manual
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedMethod = .manual
-                    }
+                    selectMethod(.manual)
                 } label: {
                     VStack(alignment: .leading, spacing: 8) {
                         ZStack {
@@ -259,10 +342,10 @@ struct AddWordsView: View {
                                 .font(.body.weight(.semibold))
                                 .foregroundStyle(.white)
                         }
-                        Text("Type Manually")
+                        Text(L("add_words_manual_title"))
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.primary)
-                        Text("Add words one by one")
+                        Text(L("add_words_manual_desc"))
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
                             .lineLimit(2)
@@ -285,9 +368,9 @@ struct AddWordsView: View {
             // Example sentences toggle
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Example sentences")
+                    Text(L("add_words_examples_title"))
                         .font(.subheadline.weight(.semibold))
-                    Text("AI generates a usage example for each word")
+                    Text(L("add_words_examples_desc"))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }

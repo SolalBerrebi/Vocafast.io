@@ -7,6 +7,8 @@ struct DeckDetailView: View {
     @State private var showExportMenu = false
     @State private var exportFileURL: URL?
     @State private var showShareSheet = false
+    @State private var showDeleteDeck = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Group {
@@ -16,22 +18,22 @@ struct DeckDetailView: View {
             } else if viewModel.words.isEmpty {
                 // Empty state
                 VStack(spacing: 24) {
-                    Text("No words yet")
+                    Text(L("deck_detail_empty_title"))
                         .font(.title2.bold())
-                    Text("Add vocabulary using one of these methods:")
+                    Text(L("deck_detail_empty_subtitle"))
                         .foregroundStyle(.secondary)
 
                     VStack(spacing: 12) {
-                        EmptyMethodCard(icon: "pencil", title: "Manual", description: "Type words one by one")
-                        EmptyMethodCard(icon: "camera", title: "Photo", description: "Capture from textbooks")
-                        EmptyMethodCard(icon: "doc.text", title: "Text", description: "Paste and extract")
-                        EmptyMethodCard(icon: "sparkles", title: "Topics", description: "AI-generated vocabulary")
+                        EmptyMethodCard(icon: "pencil", title: L("deck_detail_manual"), description: L("deck_detail_manual_desc"))
+                        EmptyMethodCard(icon: "camera", title: L("deck_detail_photo"), description: L("deck_detail_photo_desc"))
+                        EmptyMethodCard(icon: "doc.text", title: L("deck_detail_text"), description: L("deck_detail_text_desc"))
+                        EmptyMethodCard(icon: "sparkles", title: L("deck_detail_topics"), description: L("deck_detail_topics_desc"))
                     }
 
                     NavigationLink {
                         AddWordsView(deckId: deckId)
                     } label: {
-                        Text("Add Words")
+                        Text(L("deck_detail_add_words"))
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
@@ -48,7 +50,7 @@ struct DeckDetailView: View {
                         HStack {
                             Image(systemName: "magnifyingglass")
                                 .foregroundStyle(.secondary)
-                            TextField("Search words...", text: $viewModel.searchText)
+                            TextField(L("deck_detail_search"), text: $viewModel.searchText)
                                 .autocapitalization(.none)
                         }
                         .padding(10)
@@ -61,7 +63,7 @@ struct DeckDetailView: View {
                     // Bulk delete bar
                     if viewModel.isSelectMode {
                         HStack {
-                            Button(viewModel.selectedWordIds.count == viewModel.filteredWords.count ? "Deselect All" : "Select All") {
+                            Button(viewModel.selectedWordIds.count == viewModel.filteredWords.count ? L("deck_detail_deselect_all") : L("deck_detail_select_all")) {
                                 if viewModel.selectedWordIds.count == viewModel.filteredWords.count {
                                     viewModel.deselectAll()
                                 } else {
@@ -70,7 +72,7 @@ struct DeckDetailView: View {
                             }
                             Spacer()
                             if !viewModel.selectedWordIds.isEmpty {
-                                Button("Delete \(viewModel.selectedWordIds.count) Words") {
+                                Button(LF("deck_detail_delete_words", viewModel.selectedWordIds.count)) {
                                     Task { await viewModel.deleteBulk() }
                                 }
                                 .foregroundStyle(.red)
@@ -112,27 +114,51 @@ struct DeckDetailView: View {
         .navigationTitle(viewModel.deck?.name ?? "Deck")
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                if !viewModel.words.isEmpty {
-                    // Select mode toggle
-                    Button {
-                        viewModel.isSelectMode.toggle()
-                        if !viewModel.isSelectMode {
-                            viewModel.selectedWordIds.removeAll()
-                        }
-                    } label: {
-                        Image(systemName: viewModel.isSelectMode ? "xmark.circle" : "checkmark.circle")
-                    }
-
-                    // Export
+                if viewModel.words.isEmpty && !viewModel.isLoading {
                     Menu {
-                        Button("Export TSV") {
-                            exportAs(format: .tsv)
-                        }
-                        Button("Export JSON") {
-                            exportAs(format: .json)
+                        Button(role: .destructive) {
+                            showDeleteDeck = true
+                        } label: {
+                            Label(L("deck_detail_delete_deck"), systemImage: "trash")
                         }
                     } label: {
-                        Image(systemName: "square.and.arrow.up")
+                        Image(systemName: "ellipsis.circle")
+                    }
+                }
+
+                if !viewModel.words.isEmpty {
+                    // More menu (select, export)
+                    Menu {
+                        Button {
+                            viewModel.isSelectMode.toggle()
+                            if !viewModel.isSelectMode {
+                                viewModel.selectedWordIds.removeAll()
+                            }
+                        } label: {
+                            Label(
+                                viewModel.isSelectMode ? L("deck_detail_cancel_selection") : L("deck_detail_select_words"),
+                                systemImage: viewModel.isSelectMode ? "xmark.circle" : "checkmark.circle"
+                            )
+                        }
+
+                        Menu(L("deck_detail_export")) {
+                            Button(L("deck_detail_export_tsv")) {
+                                exportAs(format: .tsv)
+                            }
+                            Button(L("deck_detail_export_json")) {
+                                exportAs(format: .json)
+                            }
+                        }
+
+                        Divider()
+
+                        Button(role: .destructive) {
+                            showDeleteDeck = true
+                        } label: {
+                            Label(L("deck_detail_delete_deck"), systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
                     }
 
                     // Add words
@@ -174,6 +200,21 @@ struct DeckDetailView: View {
         }
         .task {
             await viewModel.fetchDeckAndWords(deckId: deckId)
+        }
+        .confirmationDialog(
+            L("decks_delete_title"),
+            isPresented: $showDeleteDeck,
+            titleVisibility: .visible
+        ) {
+            Button(L("common_delete"), role: .destructive) {
+                Task {
+                    let repo = DeckRepository()
+                    try? await repo.delete(id: deckId)
+                    dismiss()
+                }
+            }
+        } message: {
+            Text(L("decks_delete_message"))
         }
     }
 

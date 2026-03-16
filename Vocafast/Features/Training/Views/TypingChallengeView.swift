@@ -35,9 +35,9 @@ struct TypingChallengeView: View {
 
                     if !wasCorrect {
                         VStack(spacing: 4) {
-                            Text("Your answer: \(typedAnswer)")
+                            Text(LF("session_your_answer", typedAnswer))
                                 .foregroundStyle(.red)
-                            Text("Correct: \(card.word.translation)")
+                            Text(LF("session_correct_answer", card.word.translation))
                                 .foregroundStyle(.green)
                                 .fontWeight(.semibold)
                         }
@@ -50,7 +50,7 @@ struct TypingChallengeView: View {
                 .transition(.scale.combined(with: .opacity))
             } else {
                 // Input
-                TextField("Type the translation...", text: $typedAnswer)
+                TextField(L("session_type_placeholder"), text: $typedAnswer)
                     .textFieldStyle(.roundedBorder)
                     .font(.body)
                     .autocapitalization(.none)
@@ -63,7 +63,7 @@ struct TypingChallengeView: View {
                 Button {
                     checkAnswer()
                 } label: {
-                    Text("Check")
+                    Text(L("session_check"))
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)

@@ -28,7 +28,7 @@ struct ProgressStatsView: View {
                 mainContent
             }
         }
-        .navigationTitle("Progress")
+        .navigationTitle(L("progress_title"))
         .task {
             await viewModel.load(environmentId: appState.activeEnvironmentId)
             withAnimation(.easeOut(duration: 0.8)) {
@@ -66,10 +66,10 @@ struct ProgressStatsView: View {
                     .font(.system(size: 64))
             }
 
-            Text("Your journey begins")
+            Text(L("progress_empty_title"))
                 .font(.title2.bold())
 
-            Text("Complete a training session\nto see your progress")
+            Text(L("progress_empty_desc"))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -100,19 +100,19 @@ struct ProgressStatsView: View {
                 HStack(spacing: 12) {
                     statCard(
                         value: "\(viewModel.totalWords)",
-                        label: "Words",
+                        label: L("progress_words"),
                         icon: "textformat.abc",
                         gradient: [Color.blue, Color.cyan]
                     )
                     statCard(
                         value: "\(viewModel.masteredWords)",
-                        label: "Mastered",
+                        label: L("progress_mastered"),
                         icon: "star.fill",
                         gradient: [Color.yellow, Color.orange]
                     )
                     statCard(
                         value: "\(viewModel.totalSessions)",
-                        label: "Sessions",
+                        label: L("progress_sessions"),
                         icon: "bolt.fill",
                         gradient: [Color.purple, Color.pink]
                     )
@@ -127,7 +127,7 @@ struct ProgressStatsView: View {
                     HStack {
                         Image(systemName: "calendar")
                             .foregroundStyle(.green)
-                        Text("Activity")
+                        Text(L("progress_activity"))
                             .font(.headline)
                     }
                     .padding(.horizontal, 16)
@@ -209,7 +209,7 @@ struct ProgressStatsView: View {
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.7))
                 } else {
-                    Text("XP — MAX LEVEL")
+                    Text(L("progress_max_level"))
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.7))
                 }
@@ -238,7 +238,7 @@ struct ProgressStatsView: View {
                 .frame(height: 6)
                 .padding(.horizontal, 32)
 
-                Text("\(LevelSystem.getXPToNextLevel(appState.totalXp)) XP to \(next.name)")
+                Text(LF("progress_xp_to_next", LevelSystem.getXPToNextLevel(appState.totalXp), next.name))
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.6))
             }
@@ -277,7 +277,7 @@ struct ProgressStatsView: View {
                 .font(.system(size: 34, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
 
-            Text("day streak")
+            Text(L("progress_day_streak"))
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.8))
         }
@@ -320,7 +320,7 @@ struct ProgressStatsView: View {
                 .font(.system(size: 34, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
 
-            Text("accuracy")
+            Text(L("progress_accuracy"))
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.8))
         }

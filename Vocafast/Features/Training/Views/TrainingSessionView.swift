@@ -40,7 +40,7 @@ struct TrainingSessionView: View {
             VStack(spacing: 0) {
                 // Top bar
                 HStack {
-                    Button("Quit") {
+                    Button(L("session_quit")) {
                         Task {
                             await viewModel.quit()
                             dismiss()

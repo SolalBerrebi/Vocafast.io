@@ -3,21 +3,21 @@ import SwiftUI
 struct PhotoCaptureSection: View {
     @ObservedObject var viewModel: AddWordsViewModel
 
-    private let useCases: [(icon: String, label: String)] = [
-        ("fork.knife", "Restaurant menus"),
-        ("signpost.right.fill", "Street signs"),
-        ("book.fill", "Textbook pages"),
-        ("tag.fill", "Product labels"),
-        ("newspaper.fill", "Newspapers"),
-        ("map.fill", "Maps & guides"),
-    ]
+    private var useCases: [(icon: String, label: String)] {[
+        ("fork.knife", L("photo_restaurant")),
+        ("signpost.right.fill", L("photo_street_signs")),
+        ("book.fill", L("photo_textbook")),
+        ("tag.fill", L("photo_product_labels")),
+        ("newspaper.fill", L("photo_newspapers")),
+        ("map.fill", L("photo_maps")),
+    ]}
 
     var body: some View {
         VStack(spacing: 16) {
             if viewModel.extractedWords.isEmpty && viewModel.selectedImage == nil {
                 // Description
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Point your camera at real-world text and AI will find the words worth learning.")
+                    Text(L("photo_desc"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
@@ -47,7 +47,7 @@ struct PhotoCaptureSection: View {
                         VStack(spacing: 8) {
                             Image(systemName: "camera.fill")
                                 .font(.title2)
-                            Text("Take Photo")
+                            Text(L("photo_take"))
                                 .font(.subheadline.weight(.medium))
                         }
                         .frame(maxWidth: .infinity)
@@ -63,7 +63,7 @@ struct PhotoCaptureSection: View {
                         VStack(spacing: 8) {
                             Image(systemName: "photo.on.rectangle")
                                 .font(.title2)
-                            Text("Gallery")
+                            Text(L("photo_gallery"))
                                 .font(.subheadline.weight(.medium))
                         }
                         .frame(maxWidth: .infinity)
@@ -113,7 +113,7 @@ struct PhotoCaptureSection: View {
                 )
 
                 HStack(spacing: 12) {
-                    Button("Retake") {
+                    Button(L("photo_retake")) {
                         viewModel.clearExtracted()
                     }
                     .frame(maxWidth: .infinity)
@@ -124,7 +124,7 @@ struct PhotoCaptureSection: View {
                     Button {
                         Task { await viewModel.saveSelected(sourceType: .photo) }
                     } label: {
-                        Text("Save Selected")
+                        Text(L("photo_save_selected"))
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)

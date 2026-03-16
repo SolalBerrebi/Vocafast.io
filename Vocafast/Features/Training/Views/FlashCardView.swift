@@ -41,7 +41,7 @@ struct FlashCardView: View {
             }
 
             if !isFlipped {
-                Text("Tap to reveal")
+                Text(L("session_tap_reveal"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -52,7 +52,7 @@ struct FlashCardView: View {
                     Button {
                         resetAndAnswer(action: onAgain)
                     } label: {
-                        Text("Again")
+                        Text(L("session_again"))
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
@@ -64,7 +64,7 @@ struct FlashCardView: View {
                     Button {
                         resetAndAnswer(action: onHard)
                     } label: {
-                        Text("Hard")
+                        Text(L("session_hard"))
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
@@ -76,7 +76,7 @@ struct FlashCardView: View {
                     Button {
                         resetAndAnswer(action: onGood)
                     } label: {
-                        Text("Good")
+                        Text(L("session_good"))
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)

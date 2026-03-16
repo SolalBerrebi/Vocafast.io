@@ -12,9 +12,9 @@ struct LoginView: View {
 
                 // Logo / Title
                 VStack(spacing: 8) {
-                    Text("Vocafast")
+                    Text(L("auth_app_name"))
                         .font(.largeTitle.bold())
-                    Text("Learn vocabulary, fast.")
+                    Text(L("auth_tagline"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -34,13 +34,13 @@ struct LoginView: View {
 
                 // Form fields
                 VStack(spacing: 16) {
-                    TextField("Email", text: $viewModel.email)
+                    TextField(L("auth_email"), text: $viewModel.email)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                         .textFieldStyle(.roundedBorder)
 
-                    SecureField("Password", text: $viewModel.password)
+                    SecureField(L("auth_password"), text: $viewModel.password)
                         .textContentType(.password)
                         .textFieldStyle(.roundedBorder)
                 }
@@ -54,7 +54,7 @@ struct LoginView: View {
                             ProgressView()
                                 .tint(.white)
                         } else {
-                            Text("Sign In")
+                            Text(L("auth_sign_in"))
                         }
                     }
                     .font(.headline)
@@ -67,7 +67,7 @@ struct LoginView: View {
                 .disabled(viewModel.isLoading)
 
                 // Forgot Password
-                Button("Forgot Password?") {
+                Button(L("auth_forgot_password")) {
                     showForgotPassword = true
                 }
                 .font(.subheadline)
@@ -76,9 +76,9 @@ struct LoginView: View {
 
                 // Sign Up link
                 HStack {
-                    Text("Don't have an account?")
+                    Text(L("auth_no_account"))
                         .foregroundStyle(.secondary)
-                    Button("Sign Up") {
+                    Button(L("auth_sign_up")) {
                         showSignup = true
                     }
                     .fontWeight(.semibold)

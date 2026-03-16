@@ -24,7 +24,7 @@ struct SessionSummaryView: View {
             VStack(spacing: 24) {
                 Spacer().frame(height: 20)
 
-                Text("Session Complete!")
+                Text(L("summary_complete"))
                     .font(.largeTitle.bold())
 
                 // Level up animation
@@ -32,7 +32,7 @@ struct SessionSummaryView: View {
                     VStack(spacing: 8) {
                         Text(currentLevel.emoji)
                             .font(.system(size: 64))
-                        Text("Level Up!")
+                        Text(L("summary_level_up"))
                             .font(.title2.bold())
                             .foregroundStyle(Color.accentColor)
                         Text(currentLevel.name)
@@ -45,9 +45,9 @@ struct SessionSummaryView: View {
 
                 // Results bars
                 VStack(spacing: 12) {
-                    ResultBar(label: "Correct", count: correct, total: total, color: .green)
-                    ResultBar(label: "Hard", count: hard, total: total, color: .orange)
-                    ResultBar(label: "Incorrect", count: incorrect, total: total, color: .red)
+                    ResultBar(label: L("summary_correct"), count: correct, total: total, color: .green)
+                    ResultBar(label: L("summary_hard"), count: hard, total: total, color: .orange)
+                    ResultBar(label: L("summary_incorrect"), count: incorrect, total: total, color: .red)
                 }
                 .padding(.horizontal, 20)
 
@@ -56,14 +56,14 @@ struct SessionSummaryView: View {
                     VStack {
                         Text(formatDuration(durationSeconds))
                             .font(.title3.bold())
-                        Text("Duration")
+                        Text(L("summary_duration"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     VStack {
                         Text(String(format: "%.1fs", Double(avgResponseTimeMs) / 1000.0))
                             .font(.title3.bold())
-                        Text("Avg Time")
+                        Text(L("summary_avg_time"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -72,18 +72,18 @@ struct SessionSummaryView: View {
                 // XP Breakdown
                 if let xp = xpResult {
                     VStack(spacing: 8) {
-                        Text("XP Earned")
+                        Text(L("summary_xp_earned"))
                             .font(.headline)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            XPRow(label: "Base XP", value: xp.baseXP)
+                            XPRow(label: L("summary_base_xp"), value: xp.baseXP)
                             if xp.speedBonus > 0 {
-                                XPRow(label: "Speed Bonus", value: xp.speedBonus)
+                                XPRow(label: L("summary_speed_bonus"), value: xp.speedBonus)
                             }
-                            XPRow(label: "Completion Bonus", value: xp.completionBonus)
+                            XPRow(label: L("summary_completion_bonus"), value: xp.completionBonus)
                             if xp.streakMultiplier > 1.0 {
                                 HStack {
-                                    Text("Streak Multiplier")
+                                    Text(L("summary_streak_multiplier"))
                                         .font(.subheadline)
                                     Spacer()
                                     Text("x\(String(format: "%.1f", xp.streakMultiplier))")
@@ -92,7 +92,7 @@ struct SessionSummaryView: View {
                             }
                             Divider()
                             HStack {
-                                Text("Total")
+                                Text(L("summary_total"))
                                     .font(.headline)
                                 Spacer()
                                 Text("+\(xp.totalXP) XP")
@@ -113,7 +113,7 @@ struct SessionSummaryView: View {
                 Button {
                     onDone()
                 } label: {
-                    Text("Done")
+                    Text(L("common_done"))
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)

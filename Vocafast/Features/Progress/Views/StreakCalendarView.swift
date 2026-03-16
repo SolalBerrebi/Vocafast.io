@@ -70,14 +70,14 @@ struct StreakCalendarView: View {
 
             // Legend
             HStack(spacing: 12) {
-                Text("\(sessionDates.count) active days")
+                Text(LF("progress_active_days", sessionDates.count))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
 
                 Spacer()
 
                 HStack(spacing: 4) {
-                    Text("Less")
+                    Text(L("progress_less"))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
 
@@ -93,7 +93,7 @@ struct StreakCalendarView: View {
                         .fill(Color.green)
                         .frame(width: 10, height: 10)
 
-                    Text("More")
+                    Text(L("progress_more"))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

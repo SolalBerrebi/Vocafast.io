@@ -34,6 +34,10 @@ final class AddWordsViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showCoachMark = false
 
+    // Save success state
+    @Published var showSaveSuccess = false
+    @Published var lastSaveCount = 0
+
     private let wordRepo = WordRepository()
     private let profileRepo = ProfileRepository()
     private let envRepo = EnvironmentRepository()
@@ -244,6 +248,8 @@ final class AddWordsViewModel: ObservableObject {
             for w in selected {
                 existingWords.insert(w.word.lowercased())
             }
+            lastSaveCount = words.count
+            showSaveSuccess = true
             extractedWords.removeAll()
             selectedImage = nil
             inputText = ""
@@ -262,6 +268,11 @@ final class AddWordsViewModel: ObservableObject {
         if let index = extractedWords.firstIndex(where: { $0.id == id }) {
             extractedWords[index].isSelected.toggle()
         }
+    }
+
+    func dismissSuccess() {
+        showSaveSuccess = false
+        lastSaveCount = 0
     }
 
     func clearExtracted() {

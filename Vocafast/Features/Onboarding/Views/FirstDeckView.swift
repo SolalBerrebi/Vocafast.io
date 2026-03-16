@@ -9,7 +9,7 @@ struct FirstDeckView: View {
             StepIndicator(current: 3, total: 3)
                 .padding(.top, 16)
 
-            Text("Create your first deck")
+            Text(L("onboarding_first_deck"))
                 .font(.title2.bold())
                 .padding(.top, 24)
 
@@ -24,7 +24,7 @@ struct FirstDeckView: View {
                 VStack(spacing: 20) {
                     // Preset topics
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Choose a topic")
+                        Text(L("onboarding_choose_topic"))
                             .font(.headline)
 
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -56,10 +56,10 @@ struct FirstDeckView: View {
 
                     // Or custom name
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Or enter a custom name")
+                        Text(L("onboarding_custom_name"))
                             .font(.headline)
 
-                        TextField("e.g. My Vocabulary", text: $viewModel.deckName)
+                        TextField(L("onboarding_custom_placeholder"), text: $viewModel.deckName)
                             .textFieldStyle(.roundedBorder)
                             .onChange(of: viewModel.deckName) { _, newValue in
                                 if !newValue.isEmpty {
@@ -71,7 +71,7 @@ struct FirstDeckView: View {
                     // Vocabulary level (only for preset topics)
                     if viewModel.selectedTopic != nil {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Vocabulary Level")
+                            Text(L("onboarding_vocab_level"))
                                 .font(.headline)
 
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -98,7 +98,7 @@ struct FirstDeckView: View {
                         // Word count slider
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
-                                Text("Word Count")
+                                Text(L("onboarding_word_count"))
                                     .font(.headline)
                                 Spacer()
                                 Text("\(Int(viewModel.wordCount))")
@@ -126,12 +126,12 @@ struct FirstDeckView: View {
                         HStack(spacing: 8) {
                             ProgressView().tint(.white)
                             if viewModel.selectedTopic != nil {
-                                Text("Generating \(Int(viewModel.wordCount)) words...")
+                                Text(LF("onboarding_generating", Int(viewModel.wordCount)))
                                     .foregroundStyle(.white)
                             }
                         }
                     } else {
-                        Text("Create Deck")
+                        Text(L("onboarding_create_deck"))
                     }
                 }
                 .font(.headline)

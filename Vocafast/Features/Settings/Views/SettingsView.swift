@@ -7,15 +7,15 @@ struct SettingsView: View {
     var body: some View {
         List {
             // Account
-            Section("Account") {
+            Section(L("settings_account")) {
                 HStack {
-                    Text("Email")
+                    Text(L("settings_email"))
                     Spacer()
                     Text(viewModel.email)
                         .foregroundStyle(.secondary)
                 }
 
-                Button("Change Password") {
+                Button(L("settings_change_password")) {
                     viewModel.showChangePassword = true
                 }
             }
@@ -44,30 +44,51 @@ struct SettingsView: View {
                 }
             }
 
+            // About
+            Section(L("settings_about")) {
+                Link(L("settings_privacy"), destination: URL(string: "https://vocafast-io.com/privacy")!)
+
+                NavigationLink(L("settings_ai_data")) {
+                    AIDataUsageView()
+                }
+            }
+
             // Sign Out
             Section {
-                Button("Sign Out", role: .destructive) {
+                Button(L("settings_sign_out"), role: .destructive) {
                     Task { await viewModel.signOut() }
                 }
             }
+
+            // Delete Account
+            Section {
+                Button(L("settings_delete_account"), role: .destructive) {
+                    viewModel.showDeleteAccount = true
+                }
+            } footer: {
+                Text(L("settings_delete_account_footer"))
+            }
         }
-        .navigationTitle("Settings")
+        .navigationTitle(L("settings_title"))
         .sheet(isPresented: $viewModel.showChangePassword) {
             ChangePasswordSheet(viewModel: viewModel)
         }
         .sheet(isPresented: $viewModel.showAddLanguage) {
             AddLanguageSheet(viewModel: viewModel)
         }
+        .sheet(isPresented: $viewModel.showDeleteAccount) {
+            DeleteAccountSheet(viewModel: viewModel)
+        }
         .confirmationDialog(
-            "Delete Language",
+            L("settings_delete_lang_title"),
             isPresented: $viewModel.showDeleteLanguage,
             titleVisibility: .visible
         ) {
-            Button("Delete", role: .destructive) {
+            Button(L("common_delete"), role: .destructive) {
                 Task { await viewModel.deleteLanguage(appState: appState) }
             }
         } message: {
-            Text("This will permanently delete all decks, words, and training history for this language.")
+            Text(L("settings_delete_lang_message"))
         }
         .task {
             await viewModel.load()
@@ -91,20 +112,20 @@ private struct ChangePasswordSheet: View {
                 }
 
                 Section {
-                    SecureField("New Password", text: $viewModel.newPassword)
+                    SecureField(L("auth_new_password"), text: $viewModel.newPassword)
                         .textContentType(.newPassword)
-                    SecureField("Confirm Password", text: $viewModel.confirmPassword)
+                    SecureField(L("auth_confirm_password"), text: $viewModel.confirmPassword)
                         .textContentType(.newPassword)
                 }
             }
-            .navigationTitle("Change Password")
+            .navigationTitle(L("settings_change_password"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L("common_cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(L("common_save")) {
                         Task { await viewModel.changePassword() }
                     }
                     .disabled(viewModel.isLoading)
@@ -147,14 +168,14 @@ private struct AddLanguageSheet: View {
                     }
                 }
             }
-            .navigationTitle("Add Language")
+            .navigationTitle(L("settings_add_language"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L("common_cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
+                    Button(L("common_add")) {
                         Task { await viewModel.addLanguage(appState: appState) }
                     }
                     .disabled(viewModel.selectedNewLang == nil || viewModel.isLoading)

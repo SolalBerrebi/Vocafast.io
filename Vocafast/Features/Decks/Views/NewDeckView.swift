@@ -19,9 +19,9 @@ struct NewDeckView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16))
 
                     VStack(alignment: .leading) {
-                        Text(viewModel.name.isEmpty ? "New Deck" : viewModel.name)
+                        Text(viewModel.name.isEmpty ? L("new_deck_title") : viewModel.name)
                             .font(.title3.bold())
-                        Text("0 words")
+                        Text(L("new_deck_words"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -31,9 +31,9 @@ struct NewDeckView: View {
 
                 // Name
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Name")
+                    Text(L("new_deck_name"))
                         .font(.headline)
-                    TextField("Enter deck name", text: $viewModel.name)
+                    TextField(L("new_deck_name_placeholder"), text: $viewModel.name)
                         .textFieldStyle(.roundedBorder)
                 }
                 .padding(.horizontal, 24)
@@ -47,7 +47,7 @@ struct NewDeckView: View {
 
                 // Colors
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Color")
+                    Text(L("new_deck_color"))
                         .font(.headline)
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: 12) {
                         ForEach(viewModel.colors, id: \.self) { color in
@@ -70,7 +70,7 @@ struct NewDeckView: View {
 
                 // Icons
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Icon")
+                    Text(L("new_deck_icon"))
                         .font(.headline)
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
                         ForEach(viewModel.icons, id: \.self) { icon in
@@ -96,7 +96,7 @@ struct NewDeckView: View {
             }
             .padding(.vertical, 16)
         }
-        .navigationTitle("New Deck")
+        .navigationTitle(L("new_deck_title"))
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button {
@@ -110,7 +110,7 @@ struct NewDeckView: View {
                     if viewModel.isLoading {
                         ProgressView()
                     } else {
-                        Text("Create")
+                        Text(L("new_deck_create"))
                             .fontWeight(.semibold)
                     }
                 }
@@ -119,7 +119,7 @@ struct NewDeckView: View {
         }
         .navigationDestination(isPresented: $navigateToDetail) {
             if let deckId = createdDeckId {
-                DeckDetailView(deckId: deckId)
+                AddWordsView(deckId: deckId)
             }
         }
     }

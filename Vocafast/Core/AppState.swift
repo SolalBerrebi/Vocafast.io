@@ -19,6 +19,11 @@ final class AppState: ObservableObject {
     @Published var streakDays: Int = 0
     @Published var lastActiveDate: String?
     @Published var showTimer: Bool = true
+    @Published var nativeLang: String = "en" {
+        didSet {
+            LocalizationManager.shared.language = LocalizationManager.resolveUILanguage(for: nativeLang)
+        }
+    }
 
     private let supabase = SupabaseManager.shared.client
     private var authStateTask: Task<Void, Never>?
@@ -84,6 +89,9 @@ final class AppState: ObservableObject {
                 authState = .onboarding
                 return
             }
+
+            // Load native language for UI localization
+            nativeLang = profile.nativeLang
 
             // Load gamification data
             totalXp = profile.totalXp

@@ -6,7 +6,7 @@ struct ManualEntrySection: View {
     var body: some View {
         VStack(spacing: 16) {
             // Description
-            Text("Add a single word with its translation. Use this when you encounter a new word you want to remember.")
+            Text(L("manual_desc"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -20,13 +20,13 @@ struct ManualEntrySection: View {
             }
 
             VStack(spacing: 12) {
-                TextField("Word (target language)", text: $viewModel.manualWord)
+                TextField(L("manual_word"), text: $viewModel.manualWord)
                     .textFieldStyle(.roundedBorder)
 
-                TextField("Translation (native language)", text: $viewModel.manualTranslation)
+                TextField(L("manual_translation"), text: $viewModel.manualTranslation)
                     .textFieldStyle(.roundedBorder)
 
-                TextField("Context sentence (optional)", text: $viewModel.manualContext)
+                TextField(L("manual_context"), text: $viewModel.manualContext)
                     .textFieldStyle(.roundedBorder)
             }
             .padding(.horizontal, 16)
@@ -38,7 +38,7 @@ struct ManualEntrySection: View {
                     if viewModel.isLoading {
                         ProgressView().tint(.white)
                     } else {
-                        Text("Add Word")
+                        Text(L("manual_add_word"))
                     }
                 }
                 .font(.headline)

@@ -18,7 +18,7 @@ struct MainTabView: View {
                     }
             }
             .tabItem {
-                Label("Decks", systemImage: "rectangle.stack")
+                Label(L("tab_decks"), systemImage: "rectangle.stack")
             }
             .tag(0)
 
@@ -34,7 +34,7 @@ struct MainTabView: View {
                     }
             }
             .tabItem {
-                Label("Progress", systemImage: "chart.bar")
+                Label(L("tab_progress"), systemImage: "chart.bar")
             }
             .tag(1)
 
@@ -50,7 +50,7 @@ struct MainTabView: View {
                     }
             }
             .tabItem {
-                Label("Settings", systemImage: "gearshape")
+                Label(L("tab_settings"), systemImage: "gearshape")
             }
             .tag(2)
         }

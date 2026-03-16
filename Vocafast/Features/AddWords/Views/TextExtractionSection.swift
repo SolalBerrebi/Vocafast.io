@@ -8,7 +8,7 @@ struct TextExtractionSection: View {
         VStack(spacing: 16) {
             if viewModel.extractedWords.isEmpty {
                 // Description
-                Text("Paste any text \u{2014} a word list, a paragraph from a book, sentences from a chat. AI extracts and translates the vocabulary.")
+                Text(L("text_desc"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -23,7 +23,7 @@ struct TextExtractionSection: View {
                         .overlay(
                             Group {
                                 if viewModel.inputText.isEmpty {
-                                    Text("Paste text here to extract vocabulary...")
+                                    Text(L("text_placeholder"))
                                         .foregroundStyle(.tertiary)
                                         .padding(12)
                                         .allowsHitTesting(false)
@@ -51,7 +51,7 @@ struct TextExtractionSection: View {
                                 Text(viewModel.loadingMessage)
                             }
                         } else {
-                            Text("Extract & Translate")
+                            Text(L("text_extract"))
                         }
                     }
                     .font(.headline)
@@ -70,7 +70,7 @@ struct TextExtractionSection: View {
                 )
 
                 HStack(spacing: 12) {
-                    Button("Clear") {
+                    Button(L("common_clear")) {
                         viewModel.clearExtracted()
                     }
                     .frame(maxWidth: .infinity)
@@ -81,7 +81,7 @@ struct TextExtractionSection: View {
                     Button {
                         Task { await viewModel.saveSelected(sourceType: .text) }
                     } label: {
-                        Text("Save Selected")
+                        Text(L("text_save_selected"))
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)

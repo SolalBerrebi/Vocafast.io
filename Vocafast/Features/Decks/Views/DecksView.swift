@@ -4,6 +4,10 @@ struct DecksView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var viewModel = DecksViewModel()
     @State private var showNewDeck = false
+    @State private var quickTrainDeckId: UUID?
+    @State private var showQuickTrain = false
+    @State private var deletingDeckId: UUID?
+    @State private var showDeleteDeck = false
 
     var body: some View {
         ZStack {
@@ -15,9 +19,9 @@ struct DecksView: View {
                 VStack(spacing: 16) {
                     Text("📚")
                         .font(.system(size: 64))
-                    Text("No decks yet")
+                    Text(L("decks_empty_title"))
                         .font(.title2.bold())
-                    Text("Create your first vocabulary deck to start learning")
+                    Text(L("decks_empty_subtitle"))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -28,6 +32,23 @@ struct DecksView: View {
                         ForEach(viewModel.decks) { deck in
                             NavigationLink(value: deck.id) {
                                 DeckCardView(deck: deck)
+                            }
+                            .contextMenu {
+                                if deck.wordCount > 0 {
+                                    Button {
+                                        quickTrainDeckId = deck.id
+                                        showQuickTrain = true
+                                    } label: {
+                                        Label(L("decks_train"), systemImage: "play.fill")
+                                    }
+                                }
+
+                                Button(role: .destructive) {
+                                    deletingDeckId = deck.id
+                                    showDeleteDeck = true
+                                } label: {
+                                    Label(L("decks_delete_deck"), systemImage: "trash")
+                                }
                             }
                         }
                     }
@@ -61,7 +82,7 @@ struct DecksView: View {
             if viewModel.showCoachMark {
                 VStack {
                     Spacer().frame(height: 80)
-                    CoachMarkView(text: "Tap your deck to get started!") {
+                    CoachMarkView(text: L("decks_coach_mark")) {
                         withAnimation {
                             viewModel.showCoachMark = false
                             CoachMarkStore.dismiss("decks_tap")
@@ -71,12 +92,17 @@ struct DecksView: View {
                 }
             }
         }
-        .navigationTitle("Decks")
+        .navigationTitle(L("decks_title"))
         .navigationDestination(isPresented: $showNewDeck) {
             NewDeckView()
         }
         .navigationDestination(for: UUID.self) { deckId in
             DeckDetailView(deckId: deckId)
+        }
+        .navigationDestination(isPresented: $showQuickTrain) {
+            if let deckId = quickTrainDeckId {
+                TrainingLauncherView(deckId: deckId)
+            }
         }
         .task {
             await viewModel.fetchDecks(environmentId: appState.activeEnvironmentId)
@@ -85,6 +111,19 @@ struct DecksView: View {
             Task {
                 await viewModel.fetchDecks(environmentId: newValue)
             }
+        }
+        .confirmationDialog(
+            L("decks_delete_title"),
+            isPresented: $showDeleteDeck,
+            titleVisibility: .visible
+        ) {
+            Button(L("common_delete"), role: .destructive) {
+                if let id = deletingDeckId {
+                    Task { await viewModel.deleteDeck(id: id) }
+                }
+            }
+        } message: {
+            Text(L("decks_delete_message"))
         }
     }
 }

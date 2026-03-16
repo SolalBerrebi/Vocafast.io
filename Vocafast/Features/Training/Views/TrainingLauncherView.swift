@@ -7,6 +7,8 @@ struct TrainingLauncherView: View {
     @State private var showTrainingSession = false
     @State private var sessionData: (session: TrainingSession, cards: [TrainingCard])?
 
+    @Environment(\.dismiss) private var dismiss
+
     init(deckId: UUID) {
         self.deckId = deckId
         _viewModel = StateObject(wrappedValue: TrainingLauncherViewModel(deckId: deckId))
@@ -21,15 +23,15 @@ struct TrainingLauncherView: View {
                 } else if let stats = viewModel.stats {
                     // Stats cards
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        StatCard(title: "Due", value: "\(stats.due)", color: .orange)
-                        StatCard(title: "New", value: "\(stats.newCount)", color: .blue)
-                        StatCard(title: "Learning", value: "\(stats.learning)", color: .yellow)
-                        StatCard(title: "Mastered", value: "\(stats.mastered)", color: .green)
+                        StatCard(title: L("training_due"), value: "\(stats.due)", color: .orange)
+                        StatCard(title: L("training_new"), value: "\(stats.newCount)", color: .blue)
+                        StatCard(title: L("training_learning"), value: "\(stats.learning)", color: .yellow)
+                        StatCard(title: L("training_mastered"), value: "\(stats.mastered)", color: .green)
                     }
 
                     // Study scope
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Study Scope")
+                        Text(L("training_study_scope"))
                             .font(.headline)
 
                         ForEach(StudyScope.allCases, id: \.self) { scope in
@@ -51,17 +53,17 @@ struct TrainingLauncherView: View {
 
                     // Training mode
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Training Mode")
+                        Text(L("training_mode"))
                             .font(.headline)
 
                         HStack(spacing: 8) {
-                            ModeButton(title: "Flashcards", icon: "rectangle.stack", isSelected: viewModel.selectedMode == .flashcard) {
+                            ModeButton(title: L("training_flashcards"), icon: "rectangle.stack", isSelected: viewModel.selectedMode == .flashcard) {
                                 viewModel.selectedMode = .flashcard
                             }
-                            ModeButton(title: "Multiple Choice", icon: "list.bullet", isSelected: viewModel.selectedMode == .multiple_choice) {
+                            ModeButton(title: L("training_multiple_choice"), icon: "list.bullet", isSelected: viewModel.selectedMode == .multiple_choice) {
                                 viewModel.selectedMode = .multiple_choice
                             }
-                            ModeButton(title: "Typing", icon: "keyboard", isSelected: viewModel.selectedMode == .typing) {
+                            ModeButton(title: L("training_typing"), icon: "keyboard", isSelected: viewModel.selectedMode == .typing) {
                                 viewModel.selectedMode = .typing
                             }
                         }
@@ -70,10 +72,10 @@ struct TrainingLauncherView: View {
                     // Card front side (flashcards only)
                     if viewModel.selectedMode == .flashcard {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Card Front Side")
+                            Text(L("training_card_front"))
                                 .font(.headline)
 
-                            Picker("Front Side", selection: $viewModel.frontSide) {
+                            Picker(L("training_front_side"), selection: $viewModel.frontSide) {
                                 ForEach(CardFrontSide.allCases, id: \.self) { side in
                                     Text(side.rawValue).tag(side)
                                 }
@@ -84,7 +86,7 @@ struct TrainingLauncherView: View {
 
                     // Session size
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Session Size")
+                        Text(L("training_session_size"))
                             .font(.headline)
 
                         HStack(spacing: 8) {
@@ -126,7 +128,7 @@ struct TrainingLauncherView: View {
                             if viewModel.isLoading {
                                 ProgressView().tint(.white)
                             } else {
-                                Text("Start Training")
+                                Text(L("training_start"))
                             }
                         }
                         .font(.headline)
@@ -142,8 +144,10 @@ struct TrainingLauncherView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
         }
-        .navigationTitle("Training")
-        .fullScreenCover(isPresented: $showTrainingSession) {
+        .navigationTitle(L("training_title"))
+        .fullScreenCover(isPresented: $showTrainingSession, onDismiss: {
+            dismiss()
+        }) {
             if let data = sessionData {
                 TrainingSessionView(
                     session: data.session,

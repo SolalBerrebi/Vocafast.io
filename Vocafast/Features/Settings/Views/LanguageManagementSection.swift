@@ -5,7 +5,7 @@ struct LanguageManagementSection: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        Section("Languages") {
+        Section(L("settings_languages")) {
             ForEach(appState.environments) { env in
                 HStack {
                     Text(env.icon)
@@ -14,7 +14,7 @@ struct LanguageManagementSection: View {
                     Spacer()
 
                     if env.id == appState.activeEnvironmentId {
-                        Text("Default")
+                        Text(L("settings_default"))
                             .font(.caption)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -25,7 +25,7 @@ struct LanguageManagementSection: View {
                         Button {
                             Task { await viewModel.setDefaultLanguage(env.id, appState: appState) }
                         } label: {
-                            Text("Set Default")
+                            Text(L("settings_set_default"))
                                 .font(.caption)
                         }
                     }
@@ -45,7 +45,7 @@ struct LanguageManagementSection: View {
             Button {
                 viewModel.showAddLanguage = true
             } label: {
-                Label("Add Language", systemImage: "plus.circle")
+                Label(L("settings_add_language"), systemImage: "plus.circle")
             }
         }
     }

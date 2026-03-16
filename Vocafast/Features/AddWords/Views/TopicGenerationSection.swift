@@ -9,7 +9,7 @@ struct TopicGenerationSection: View {
             if viewModel.extractedWords.isEmpty {
                 // Description
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Describe any topic and AI generates vocabulary instantly. The more specific, the better.")
+                    Text(L("topic_desc"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -17,10 +17,10 @@ struct TopicGenerationSection: View {
 
                 // Custom topic input
                 HStack {
-                    TextField("e.g. cooking, animals, at the airport...", text: $viewModel.topicInput)
+                    TextField(L("topic_placeholder"), text: $viewModel.topicInput)
                         .textFieldStyle(.roundedBorder)
 
-                    Button("Go") {
+                    Button(L("common_go")) {
                         let topic = viewModel.topicInput.trimmingCharacters(in: .whitespaces)
                         guard !topic.isEmpty else { return }
                         Task { await viewModel.generateTopic(topic) }
@@ -31,7 +31,7 @@ struct TopicGenerationSection: View {
 
                 // Level selector
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Difficulty")
+                    Text(L("topic_difficulty"))
                         .font(.subheadline.weight(.semibold))
 
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -59,7 +59,7 @@ struct TopicGenerationSection: View {
                 // Word count slider
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text("Number of words")
+                        Text(L("topic_word_count"))
                             .font(.subheadline.weight(.semibold))
                         Spacer()
                         Text("\(Int(viewModel.topicWordCount))")
@@ -73,7 +73,7 @@ struct TopicGenerationSection: View {
 
                 // Quick topics grid
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Quick Topics")
+                    Text(L("topic_quick"))
                         .font(.subheadline.weight(.semibold))
                         .padding(.horizontal, 16)
 
@@ -124,7 +124,7 @@ struct TopicGenerationSection: View {
                 )
 
                 HStack(spacing: 12) {
-                    Button("Back") {
+                    Button(L("common_back")) {
                         viewModel.clearExtracted()
                     }
                     .frame(maxWidth: .infinity)
@@ -135,7 +135,7 @@ struct TopicGenerationSection: View {
                     Button {
                         Task { await viewModel.saveSelected(sourceType: .topic) }
                     } label: {
-                        Text("Save Selected")
+                        Text(L("topic_save_selected"))
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)

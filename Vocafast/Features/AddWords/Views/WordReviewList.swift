@@ -11,10 +11,10 @@ struct WordReviewList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("\(words.count) words found")
+                Text(LF("review_words_found", words.count))
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                Text("\(selectedCount) selected")
+                Text(LF("review_selected", selectedCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

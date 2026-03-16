@@ -11,7 +11,7 @@ struct NativeLangView: View {
             StepIndicator(current: 1, total: 3)
                 .padding(.top, 16)
 
-            Text("What's your native language?")
+            Text(L("onboarding_native_lang"))
                 .font(.title2.bold())
                 .padding(.top, 24)
 
@@ -65,7 +65,7 @@ struct NativeLangView: View {
                     if viewModel.isLoading {
                         ProgressView().tint(.white)
                     } else {
-                        Text("Continue")
+                        Text(L("common_continue"))
                     }
                 }
                 .font(.headline)

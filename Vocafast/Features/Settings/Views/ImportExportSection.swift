@@ -6,11 +6,11 @@ struct ImportExportSection: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        Section("Import & Export") {
+        Section(L("settings_import_export")) {
             Button {
                 viewModel.showImportPicker = true
             } label: {
-                Label("Import Deck", systemImage: "square.and.arrow.down")
+                Label(L("settings_import_deck"), systemImage: "square.and.arrow.down")
             }
 
             if let result = viewModel.importResult {
@@ -18,11 +18,11 @@ struct ImportExportSection: View {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
-                        Text("Imported \(result.wordCount) words into \"\(result.deckName)\"")
+                        Text(LF("settings_imported", result.wordCount, result.deckName))
                             .font(.subheadline)
                     }
                     if result.capped {
-                        Text("(File had \(result.totalInFile) words, capped at 500)")
+                        Text(LF("settings_capped", result.totalInFile))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -32,7 +32,7 @@ struct ImportExportSection: View {
             HStack {
                 Image(systemName: "info.circle")
                     .foregroundStyle(.secondary)
-                Text("To export, open a deck and tap the share button")
+                Text(L("settings_export_hint"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

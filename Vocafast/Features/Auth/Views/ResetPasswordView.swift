@@ -10,7 +10,7 @@ struct ResetPasswordView: View {
             VStack(spacing: 24) {
                 Spacer().frame(height: 60)
 
-                Text("Set New Password")
+                Text(L("auth_set_new_password"))
                     .font(.largeTitle.bold())
 
                 if showSuccess {
@@ -19,10 +19,10 @@ struct ResetPasswordView: View {
                             .font(.system(size: 60))
                             .foregroundStyle(.green)
 
-                        Text("Password Updated")
+                        Text(L("auth_password_updated"))
                             .font(.title2.bold())
 
-                        Text("Your password has been updated successfully.")
+                        Text(L("auth_password_updated_desc"))
                             .foregroundStyle(.secondary)
                     }
                     .padding(.top, 40)
@@ -38,11 +38,11 @@ struct ResetPasswordView: View {
                     }
 
                     VStack(spacing: 16) {
-                        SecureField("New Password", text: $viewModel.password)
+                        SecureField(L("auth_new_password"), text: $viewModel.password)
                             .textContentType(.newPassword)
                             .textFieldStyle(.roundedBorder)
 
-                        SecureField("Confirm Password", text: $viewModel.confirmPassword)
+                        SecureField(L("auth_confirm_password"), text: $viewModel.confirmPassword)
                             .textContentType(.newPassword)
                             .textFieldStyle(.roundedBorder)
                     }
@@ -59,7 +59,7 @@ struct ResetPasswordView: View {
                             if viewModel.isLoading {
                                 ProgressView().tint(.white)
                             } else {
-                                Text("Update Password")
+                                Text(L("auth_update_password"))
                             }
                         }
                         .font(.headline)

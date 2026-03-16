@@ -12,36 +12,65 @@ struct NotificationSettingsSection: View {
     }
 
     var body: some View {
-        Section("Notifications") {
-            Toggle("Enable Notifications", isOn: Binding(
+        Section(L("notif_title")) {
+            Toggle(L("notif_enable"), isOn: Binding(
                 get: { isEnabled },
                 set: { newValue in Task { await viewModel.toggleNotifications(newValue) } }
             ))
 
             if isEnabled {
                 // Daily Goal
-                Toggle("Daily Goal", isOn: binding(\.dailyGoalEnabled))
+                Toggle(L("notif_daily_goal"), isOn: binding(\.dailyGoalEnabled))
 
                 if prefs?.dailyGoalEnabled == true {
-                    Button("Edit Daily Goal") {
+                    Button(L("notif_edit_daily_goal")) {
                         viewModel.showDailyGoal = true
                     }
                 }
 
                 // Daily Reminder
-                Toggle("Daily Reminder", isOn: binding(\.reminderEnabled))
+                Toggle(L("notif_daily_reminder"), isOn: binding(\.reminderEnabled))
+
+                if prefs?.reminderEnabled == true {
+                    DatePicker(
+                        L("notif_reminder_time"),
+                        selection: timeBinding(\.reminderTime),
+                        displayedComponents: .hourAndMinute
+                    )
+                }
 
                 // Streak Reminder
-                Toggle("Streak Reminder", isOn: binding(\.streakReminderEnabled))
+                Toggle(L("notif_streak_reminder"), isOn: binding(\.streakReminderEnabled))
+
+                if prefs?.streakReminderEnabled == true {
+                    DatePicker(
+                        L("notif_streak_time"),
+                        selection: timeBinding(\.streakReminderTime),
+                        displayedComponents: .hourAndMinute
+                    )
+                }
 
                 // Review Due
-                Toggle("Review Due Alerts", isOn: binding(\.reviewDueEnabled))
+                Toggle(L("notif_review_due"), isOn: binding(\.reviewDueEnabled))
 
                 // Achievements
-                Toggle("Achievements", isOn: binding(\.achievementsEnabled))
+                Toggle(L("notif_achievements"), isOn: binding(\.achievementsEnabled))
 
                 // Inactivity Nudge
-                Toggle("Inactivity Nudge", isOn: binding(\.inactivityNudgeEnabled))
+                Toggle(L("notif_inactivity_nudge"), isOn: binding(\.inactivityNudgeEnabled))
+
+                if prefs?.inactivityNudgeEnabled == true {
+                    HStack {
+                        Text(L("notif_after"))
+                        Spacer()
+                        Picker("", selection: inactivityDaysBinding) {
+                            ForEach([2, 3, 5, 7], id: \.self) { d in
+                                Text(LF("notif_days", d)).tag(d)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    }
+                }
             }
         }
         .sheet(isPresented: $viewModel.showDailyGoal) {
@@ -49,11 +78,42 @@ struct NotificationSettingsSection: View {
         }
     }
 
+    // MARK: - Bindings
+
     private func binding(_ keyPath: WritableKeyPath<NotificationPreferences, Bool>) -> Binding<Bool> {
         Binding(
             get: { viewModel.notificationPrefs?[keyPath: keyPath] ?? false },
             set: { newValue in
                 viewModel.notificationPrefs?[keyPath: keyPath] = newValue
+                Task { await viewModel.updateNotificationPrefs() }
+            }
+        )
+    }
+
+    private func timeBinding(_ keyPath: WritableKeyPath<NotificationPreferences, String>) -> Binding<Date> {
+        Binding(
+            get: {
+                let timeStr = viewModel.notificationPrefs?[keyPath: keyPath] ?? "09:00"
+                let parts = timeStr.split(separator: ":").compactMap { Int($0) }
+                var comps = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+                comps.hour = parts.first ?? 9
+                comps.minute = parts.count > 1 ? parts[1] : 0
+                return Calendar.current.date(from: comps) ?? Date()
+            },
+            set: { newDate in
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                let timeStr = String(format: "%02d:%02d", comps.hour ?? 9, comps.minute ?? 0)
+                viewModel.notificationPrefs?[keyPath: keyPath] = timeStr
+                Task { await viewModel.updateNotificationPrefs() }
+            }
+        )
+    }
+
+    private var inactivityDaysBinding: Binding<Int> {
+        Binding(
+            get: { viewModel.notificationPrefs?.inactivityNudgeDays ?? 3 },
+            set: { newValue in
+                viewModel.notificationPrefs?.inactivityNudgeDays = newValue
                 Task { await viewModel.updateNotificationPrefs() }
             }
         )
@@ -70,7 +130,7 @@ private struct DailyGoalSheet: View {
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            Text("Words per day")
+                            Text(L("notif_words_per_day"))
                             Spacer()
                             Text("\(Int(viewModel.dailyGoalWords))")
                                 .fontWeight(.semibold)
@@ -80,7 +140,7 @@ private struct DailyGoalSheet: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
-                            Text("Sessions per day")
+                            Text(L("notif_sessions_per_day"))
                             Spacer()
                             Text("\(Int(viewModel.dailyGoalSessions))")
                                 .fontWeight(.semibold)
@@ -89,11 +149,11 @@ private struct DailyGoalSheet: View {
                     }
                 }
             }
-            .navigationTitle("Daily Goal")
+            .navigationTitle(L("notif_daily_goal"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(L("common_save")) {
                         Task {
                             await viewModel.updateNotificationPrefs()
                             dismiss()

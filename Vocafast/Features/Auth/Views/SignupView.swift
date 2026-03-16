@@ -9,7 +9,7 @@ struct SignupView: View {
             VStack(spacing: 24) {
                 Spacer().frame(height: 40)
 
-                Text("Create Account")
+                Text(L("auth_create_account"))
                     .font(.largeTitle.bold())
 
                 if viewModel.showSignupSuccess {
@@ -19,14 +19,14 @@ struct SignupView: View {
                             .font(.system(size: 60))
                             .foregroundStyle(Color.accentColor)
 
-                        Text("Check your email")
+                        Text(L("auth_check_email"))
                             .font(.title2.bold())
 
-                        Text("We've sent a confirmation link to \(viewModel.email). Please click it to activate your account.")
+                        Text(LF("auth_confirm_sent", viewModel.email))
                             .multilineTextAlignment(.center)
                             .foregroundStyle(.secondary)
 
-                        Button("Back to Login") {
+                        Button(L("auth_back_to_login")) {
                             dismiss()
                         }
                         .font(.headline)
@@ -50,17 +50,17 @@ struct SignupView: View {
                     }
 
                     VStack(spacing: 16) {
-                        TextField("Display Name", text: $viewModel.displayName)
+                        TextField(L("auth_display_name"), text: $viewModel.displayName)
                             .textContentType(.name)
                             .textFieldStyle(.roundedBorder)
 
-                        TextField("Email", text: $viewModel.email)
+                        TextField(L("auth_email"), text: $viewModel.email)
                             .textContentType(.emailAddress)
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                             .textFieldStyle(.roundedBorder)
 
-                        SecureField("Password", text: $viewModel.password)
+                        SecureField(L("auth_password"), text: $viewModel.password)
                             .textContentType(.newPassword)
                             .textFieldStyle(.roundedBorder)
                     }
@@ -72,7 +72,7 @@ struct SignupView: View {
                             if viewModel.isLoading {
                                 ProgressView().tint(.white)
                             } else {
-                                Text("Sign Up")
+                                Text(L("auth_sign_up"))
                             }
                         }
                         .font(.headline)
@@ -85,9 +85,9 @@ struct SignupView: View {
                     .disabled(viewModel.isLoading)
 
                     HStack {
-                        Text("Already have an account?")
+                        Text(L("auth_has_account"))
                             .foregroundStyle(.secondary)
-                        Button("Sign In") {
+                        Button(L("auth_sign_in")) {
                             dismiss()
                         }
                         .fontWeight(.semibold)

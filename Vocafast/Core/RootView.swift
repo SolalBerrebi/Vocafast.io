@@ -7,7 +7,7 @@ struct RootView: View {
         Group {
             switch appState.authState {
             case .loading:
-                ProgressView("Loading...")
+                ProgressView(L("common_loading"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             case .unauthenticated:

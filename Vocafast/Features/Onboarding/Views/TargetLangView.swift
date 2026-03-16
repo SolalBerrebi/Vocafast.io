@@ -15,7 +15,7 @@ struct TargetLangView: View {
             StepIndicator(current: 2, total: 3)
                 .padding(.top, 16)
 
-            Text("What language do you want to learn?")
+            Text(L("onboarding_target_lang"))
                 .font(.title2.bold())
                 .padding(.top, 24)
 
@@ -68,7 +68,7 @@ struct TargetLangView: View {
                     if viewModel.isLoading {
                         ProgressView().tint(.white)
                     } else {
-                        Text("Continue")
+                        Text(L("common_continue"))
                     }
                 }
                 .font(.headline)
