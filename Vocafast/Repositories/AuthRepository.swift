@@ -12,7 +12,8 @@ final class AuthRepository {
         try await supabase.auth.signUp(
             email: email,
             password: password,
-            data: ["display_name": .string(displayName)]
+            data: ["display_name": .string(displayName)],
+            redirectTo: URL(string: "https://vocafast-io.com/callback")
         )
     }
 
@@ -21,7 +22,10 @@ final class AuthRepository {
     }
 
     func resetPasswordForEmail(_ email: String) async throws {
-        try await supabase.auth.resetPasswordForEmail(email)
+        try await supabase.auth.resetPasswordForEmail(
+            email,
+            redirectTo: URL(string: "https://vocafast-io.com/reset-password")
+        )
     }
 
     func updatePassword(_ newPassword: String) async throws {

@@ -47,6 +47,7 @@ export function useAuth() {
       password,
       options: {
         data: { display_name: displayName },
+        emailRedirectTo: "https://vocafast-io.com/callback",
       },
     });
     return { error };
@@ -58,7 +59,7 @@ export function useAuth() {
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: "https://vocafast-io.com/reset-password",
     });
     return { error };
   };
