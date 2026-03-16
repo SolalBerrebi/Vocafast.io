@@ -72,11 +72,11 @@ struct NewDeckView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(L("new_deck_icon"))
                         .font(.headline)
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 10) {
                         ForEach(viewModel.icons, id: \.self) { icon in
                             Text(icon)
-                                .font(.title2)
-                                .frame(width: 48, height: 48)
+                                .font(.title3)
+                                .frame(width: 40, height: 40)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(viewModel.selectedIcon == icon ? Color.accentColor.opacity(0.15) : Color(.systemGray6))

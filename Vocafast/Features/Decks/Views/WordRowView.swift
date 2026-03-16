@@ -2,9 +2,13 @@ import SwiftUI
 
 struct WordRowView: View {
     let word: Word
+    var targetLang: String = "en"
 
     var body: some View {
-        HStack {
+        HStack(spacing: 10) {
+            // Pronounce button
+            PronounceButton(text: word.word, language: targetLang, size: 28, iconSize: .caption)
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(word.word)
                     .font(.body.weight(.medium))
@@ -31,7 +35,7 @@ struct WordRowView: View {
     private var srsColor: Color {
         if word.repetitions == 0 {
             return .blue // New
-        } else if word.intervalDays >= 21 {
+        } else if word.intervalDays >= 14 {
             return .green // Mastered
         } else if word.easeFactor < 2.2 {
             return .orange // Struggling

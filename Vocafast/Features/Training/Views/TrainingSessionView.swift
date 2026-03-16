@@ -89,6 +89,8 @@ struct TrainingSessionView: View {
                         FlashCardView(
                             card: card,
                             frontSide: viewModel.frontSide,
+                            targetLang: appState.activeEnvironment?.targetLang ?? "en",
+                            nativeLang: appState.nativeLang,
                             onAgain: { Task { await viewModel.answerAgain() } },
                             onHard: { Task { await viewModel.answerHard() } },
                             onGood: { Task { await viewModel.answerGood() } }

@@ -63,6 +63,13 @@ final class TrainingSessionViewModel: ObservableObject {
             correct += 1
         }
 
+        // Haptics immediately
+        if wasCorrect {
+            HapticsManager.success()
+        } else {
+            HapticsManager.error()
+        }
+
         // Calculate SRS update
         let srs = SRSEngine.calculate(
             quality: quality,
@@ -71,28 +78,7 @@ final class TrainingSessionViewModel: ObservableObject {
             currentRepetitions: card.word.repetitions
         )
 
-        // Update word SRS in DB
-        do {
-            try await wordRepo.updateSRS(
-                id: card.word.id,
-                easeFactor: srs.easeFactor,
-                interval: srs.interval,
-                repetitions: srs.repetitions,
-                nextReviewAt: srs.nextReviewAt.iso8601String
-            )
-
-            // Log review
-            try await trainingRepo.logReview(
-                sessionId: session.id,
-                wordId: card.word.id,
-                quality: quality,
-                wasCorrect: wasCorrect
-            )
-        } catch {
-            // Continue even if DB fails
-        }
-
-        // Advance
+        // Advance UI immediately — don't wait for DB
         let next = currentIndex + 1
         if next >= cards.count {
             currentIndex = next
@@ -102,11 +88,23 @@ final class TrainingSessionViewModel: ObservableObject {
             cardStartedAt = Date()
         }
 
-        // Haptics
-        if wasCorrect {
-            HapticsManager.success()
-        } else {
-            HapticsManager.error()
+        // Persist to DB in background (fire-and-forget)
+        let wordId = card.word.id
+        let sessionId = session.id
+        Task.detached { [wordRepo, trainingRepo] in
+            try? await wordRepo.updateSRS(
+                id: wordId,
+                easeFactor: srs.easeFactor,
+                interval: srs.interval,
+                repetitions: srs.repetitions,
+                nextReviewAt: srs.nextReviewAt.iso8601String
+            )
+            try? await trainingRepo.logReview(
+                sessionId: sessionId,
+                wordId: wordId,
+                quality: quality,
+                wasCorrect: wasCorrect
+            )
         }
     }
 

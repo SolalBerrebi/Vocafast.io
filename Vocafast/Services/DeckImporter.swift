@@ -1,21 +1,29 @@
 import Foundation
 
+struct DeckImportMeta {
+    let words: [ImportedWord]
+    let deckName: String?
+    let targetLang: String?
+    let icon: String?
+    let color: String?
+}
+
 enum DeckImporter {
-    static func parse(fileContent: String, fileName: String) -> (words: [ImportedWord], deckName: String?) {
+    static func parse(fileContent: String, fileName: String) -> DeckImportMeta {
         let lowerName = fileName.lowercased()
 
         if lowerName.hasSuffix(".vocafast.json") || lowerName.hasSuffix(".json") {
             return parseJSON(fileContent)
         } else {
             let words = parseCSVTSV(fileContent)
-            return (words, nil)
+            return DeckImportMeta(words: words, deckName: nil, targetLang: nil, icon: nil, color: nil)
         }
     }
 
-    private static func parseJSON(_ text: String) -> (words: [ImportedWord], deckName: String?) {
+    private static func parseJSON(_ text: String) -> DeckImportMeta {
         guard let data = text.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return ([], nil)
+            return DeckImportMeta(words: [], deckName: nil, targetLang: nil, icon: nil, color: nil)
         }
 
         // Vocafast native format
@@ -26,8 +34,12 @@ enum DeckImporter {
                       let translation = dict["translation"] as? String, !translation.isEmpty else { return nil }
                 return ImportedWord(word: word, translation: translation, context: dict["context"] as? String)
             }
-            let deckName = (json["deck"] as? [String: Any])?["name"] as? String
-            return (words, deckName)
+            let deckInfo = json["deck"] as? [String: Any]
+            let deckName = deckInfo?["name"] as? String
+            let targetLang = deckInfo?["target_lang"] as? String
+            let icon = deckInfo?["icon"] as? String
+            let color = deckInfo?["color"] as? String
+            return DeckImportMeta(words: words, deckName: deckName, targetLang: targetLang, icon: icon, color: color)
         }
 
         // Plain JSON array
@@ -38,10 +50,10 @@ enum DeckImporter {
                       let translation = dict["translation"] as? String, !translation.isEmpty else { return nil }
                 return ImportedWord(word: word, translation: translation, context: nil)
             }
-            return (words, nil)
+            return DeckImportMeta(words: words, deckName: nil, targetLang: nil, icon: nil, color: nil)
         }
 
-        return ([], nil)
+        return DeckImportMeta(words: [], deckName: nil, targetLang: nil, icon: nil, color: nil)
     }
 
     private static func parseCSVTSV(_ text: String) -> [ImportedWord] {

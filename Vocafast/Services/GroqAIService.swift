@@ -1,9 +1,8 @@
 import Foundation
 
 final class GroqAIService: AIService {
-    private let apiKey = Config.groqAPIKey
+    private let supabase = SupabaseManager.shared.client
     private let model = Config.groqModel
-    private let baseURL = Config.groqBaseURL
 
     // MARK: - Text Extraction
 
@@ -43,7 +42,7 @@ final class GroqAIService: AIService {
 
         Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields\(contextFields).
 
-        If the text is empty or contains no extractable vocabulary, return an empty array: []
+        If the text is empty or contains no extractable vocabulary, return an empty array: []\(scriptInstruction(for: targetLang, langName: targetName))\(scriptInstruction(for: nativeLang, langName: nativeName))
 
         TEXT TO ANALYZE:
         \(text)
@@ -89,7 +88,7 @@ final class GroqAIService: AIService {
 
         Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields\(contextFields).
 
-        If you cannot find any words, return an empty array: []
+        If you cannot find any words, return an empty array: []\(scriptInstruction(for: targetLang, langName: targetName))\(scriptInstruction(for: nativeLang, langName: nativeName))
         """
 
         return try await callGroqMultimodal(prompt: prompt, imageBase64: base64, mimeType: mimeType, temperature: 0.1, maxTokens: 4096)
@@ -138,11 +137,35 @@ final class GroqAIService: AIService {
         - For irregular verbs or conjugation topics, include the irregular/conjugated forms\(excludeClause)
 
         Return ONLY a valid JSON array with no other text, no markdown, no code fences.
-        Each element must have "word" (in \(targetName)) and "translation" (in \(nativeName)) fields\(contextFields).
+        Each element must have "word" (in \(targetName)) and "translation" (in \(nativeName)) fields\(contextFields).\(scriptInstruction(for: targetLang, langName: targetName))\(scriptInstruction(for: nativeLang, langName: nativeName))
         """
 
         let maxTokens = count > 20 ? 4096 : 2048
         return try await callGroq(prompt: prompt, temperature: 0.3, maxTokens: includeContext ? 4096 : maxTokens)
+    }
+
+    // MARK: - Script Instructions
+
+    /// Returns an explicit instruction for non-Latin script languages to prevent romanization.
+    private func scriptInstruction(for langCode: String, langName: String) -> String {
+        switch langCode {
+        case "ja":
+            return "\n\nSCRIPT REQUIREMENT: Write ALL \(langName) words using Japanese characters (kanji, hiragana, or katakana as appropriate). NEVER use romaji or Latin letters for Japanese words. Example: write 猫 not \"neko\", write ありがとう not \"arigatou\"."
+        case "zh":
+            return "\n\nSCRIPT REQUIREMENT: Write ALL \(langName) words using simplified Chinese characters (汉字). NEVER use pinyin or Latin letters. Example: write 猫 not \"māo\", write 谢谢 not \"xièxie\"."
+        case "ko":
+            return "\n\nSCRIPT REQUIREMENT: Write ALL \(langName) words using Hangul (한글). NEVER use romanization. Example: write 고양이 not \"goyangi\"."
+        case "ru":
+            return "\n\nSCRIPT REQUIREMENT: Write ALL \(langName) words using Cyrillic script. NEVER use Latin transliteration. Example: write кошка not \"koshka\"."
+        case "ar":
+            return "\n\nSCRIPT REQUIREMENT: Write ALL \(langName) words using Arabic script (العربية). NEVER use Latin transliteration. Example: write قطة not \"qitta\"."
+        case "he":
+            return "\n\nSCRIPT REQUIREMENT: Write ALL \(langName) words using Hebrew script (עברית). NEVER use Latin transliteration. Example: write חתול not \"chatul\"."
+        case "hi":
+            return "\n\nSCRIPT REQUIREMENT: Write ALL \(langName) words using Devanagari script (देवनागरी). NEVER use Latin transliteration. Example: write बिल्ली not \"billi\"."
+        default:
+            return ""
+        }
     }
 
     // MARK: - Private Helpers
@@ -178,30 +201,25 @@ final class GroqAIService: AIService {
     }
 
     private func makeRequest(body: [String: Any]) async throws -> Data {
-        guard let url = URL(string: baseURL) else {
-            throw AIError.invalidURL
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+
+        let data: Data = try await supabase.functions.invoke(
+            "ai-proxy",
+            options: .init(
+                headers: ["Content-Type": "application/json"],
+                body: jsonData
+            )
+        ) { data, _ in data }
+
+        // Check for error responses
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let error = json["error"] as? [String: Any],
+           let message = error["message"] as? String {
+            throw AIError.apiError(message)
         }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 30
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw AIError.networkError
-        }
-
-        guard httpResponse.statusCode == 200 else {
-            if let errorJSON = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let error = errorJSON["error"] as? [String: Any],
-               let message = error["message"] as? String {
-                throw AIError.apiError(message)
-            }
-            throw AIError.apiError("HTTP \(httpResponse.statusCode)")
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let errorMsg = json["error"] as? String {
+            throw AIError.apiError(errorMsg)
         }
 
         return data

@@ -32,6 +32,10 @@ final class AuthRepository {
         try await supabase.auth.update(user: UserAttributes(password: newPassword))
     }
 
+    func updateEmail(_ newEmail: String) async throws {
+        try await supabase.auth.update(user: UserAttributes(email: newEmail))
+    }
+
     func getCurrentUser() async throws -> User? {
         try await supabase.auth.session.user
     }

@@ -10,7 +10,7 @@ struct AddWordsView: View {
     @State private var navigateToTraining = false
 
     enum CaptureMethod: Hashable {
-        case topic, photo, text, manual
+        case topic, photo, voice, text, manual
     }
 
     init(deckId: UUID) {
@@ -19,7 +19,7 @@ struct AddWordsView: View {
     }
 
     private func selectMethod(_ method: CaptureMethod) {
-        let aiMethods: Set<CaptureMethod> = [.topic, .photo, .text]
+        let aiMethods: Set<CaptureMethod> = [.topic, .photo, .voice, .text]
         if aiMethods.contains(method) && !AIConsentManager.shared.hasConsented {
             pendingAIMethod = method
             showAIConsent = true
@@ -44,6 +44,8 @@ struct AddWordsView: View {
                             TopicGenerationSection(viewModel: viewModel)
                         case .photo:
                             PhotoCaptureSection(viewModel: viewModel)
+                        case .voice:
+                            VoiceCaptureSection(viewModel: viewModel)
                         case .text:
                             TextExtractionSection(viewModel: viewModel)
                         case .manual:
@@ -127,6 +129,7 @@ struct AddWordsView: View {
         switch selectedMethod {
         case .topic: return L("add_words_topic_title")
         case .photo: return L("add_words_photo_title")
+        case .voice: return L("add_words_voice_title")
         case .text: return L("add_words_text_title")
         case .manual: return L("add_words_manual_title")
         case .none: return L("add_words_title")
@@ -287,6 +290,53 @@ struct AddWordsView: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
                                 .strokeBorder(Color.orange.opacity(0.15), lineWidth: 1.5)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+
+            // Voice Capture
+            Button {
+                selectMethod(.voice)
+            } label: {
+                HStack(alignment: .top, spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.red)
+                            .frame(width: 44, height: 44)
+                        Image(systemName: "mic.fill")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.white)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Text(L("add_words_voice_title"))
+                                .font(.body.weight(.bold))
+                                .foregroundStyle(.primary)
+                            Text(L("add_words_voice_badge"))
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.red)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.red.opacity(0.12))
+                                .clipShape(Capsule())
+                        }
+                        Text(L("add_words_voice_desc"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(3)
+                    }
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.red.opacity(0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .strokeBorder(Color.red.opacity(0.15), lineWidth: 1.5)
                         )
                 )
             }

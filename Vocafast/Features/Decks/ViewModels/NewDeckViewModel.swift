@@ -9,7 +9,39 @@ final class NewDeckViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     let colors = ["#007AFF", "#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#5856D6", "#AF52DE", "#FF2D55"]
-    let icons = ["📚", "🔤", "✈️", "🍕", "💼", "🏠", "🎵", "🎮", "💪", "🌍"]
+
+    let icons = [
+        // Education & Learning
+        "📚", "📖", "📝", "✏️", "🎓", "📐", "🔬", "🧪", "🔭", "📊",
+        // Languages & Communication
+        "🔤", "🗣️", "💬", "🌐", "📰", "✍️", "🏷️", "📮",
+        // Travel & Places
+        "✈️", "🗺️", "🏖️", "🏔️", "🗽", "🏯", "🕌", "⛩️", "🚆", "🧳",
+        // Food & Drink
+        "🍕", "🍜", "🍣", "🍰", "☕", "🍷", "🥗", "🍔", "🌮", "🧁",
+        // Work & Business
+        "💼", "💻", "📱", "📈", "🏢", "🤝", "📋", "🗂️",
+        // Home & Daily Life
+        "🏠", "🛒", "🧹", "🛋️", "🍳", "👨‍👩‍👧‍👦", "🏡", "🔑",
+        // Music & Arts
+        "🎵", "🎨", "🎭", "🎬", "📷", "🎸", "🎹", "🎤",
+        // Sports & Fitness
+        "💪", "⚽", "🏀", "🎾", "🏊", "🚴", "🧘", "🏃",
+        // Nature & Animals
+        "🌍", "🌿", "🌸", "🐶", "🐱", "🦁", "🌊", "🌳", "🦋", "🐠",
+        // Health & Science
+        "🏥", "💊", "🧬", "🩺", "🧠", "❤️", "🦷", "👁️",
+        // Technology
+        "🤖", "🎮", "🕹️", "💡", "⚡", "🔧", "🚀", "🛰️",
+        // People & Emotions
+        "😀", "😎", "🥳", "🤔", "💪", "👋", "🙏", "👀",
+        // Time & Weather
+        "⏰", "📅", "☀️", "🌧️", "❄️", "🌈", "🌙", "⭐",
+        // Shopping & Fashion
+        "🛍️", "👗", "👟", "💎", "👔", "🧢", "👜", "💄",
+        // Holidays & Fun
+        "🎉", "🎁", "🎃", "🎄", "🏆", "🎯", "🃏", "🎲",
+    ]
 
     private let deckRepo = DeckRepository()
 

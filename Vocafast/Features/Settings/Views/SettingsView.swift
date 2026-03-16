@@ -15,6 +15,10 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Button(L("settings_change_email")) {
+                    viewModel.showChangeEmail = true
+                }
+
                 Button(L("settings_change_password")) {
                     viewModel.showChangePassword = true
                 }
@@ -70,6 +74,9 @@ struct SettingsView: View {
             }
         }
         .navigationTitle(L("settings_title"))
+        .sheet(isPresented: $viewModel.showChangeEmail) {
+            ChangeEmailSheet(viewModel: viewModel)
+        }
         .sheet(isPresented: $viewModel.showChangePassword) {
             ChangePasswordSheet(viewModel: viewModel)
         }
@@ -129,6 +136,48 @@ private struct ChangePasswordSheet: View {
                         Task { await viewModel.changePassword() }
                     }
                     .disabled(viewModel.isLoading)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+// MARK: - Change Email Sheet
+
+private struct ChangeEmailSheet: View {
+    @ObservedObject var viewModel: SettingsViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let error = viewModel.errorMessage {
+                    Section {
+                        Text(error).foregroundStyle(.red)
+                    }
+                }
+
+                Section {
+                    TextField(L("settings_new_email"), text: $viewModel.newEmail)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                } footer: {
+                    Text(L("settings_change_email_hint"))
+                }
+            }
+            .navigationTitle(L("settings_change_email"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L("common_cancel")) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L("common_save")) {
+                        Task { await viewModel.changeEmail() }
+                    }
+                    .disabled(viewModel.isLoading || viewModel.newEmail.isEmpty)
                 }
             }
         }

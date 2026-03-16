@@ -8,6 +8,7 @@ struct DeckDetailView: View {
     @State private var exportFileURL: URL?
     @State private var showShareSheet = false
     @State private var showDeleteDeck = false
+    @State private var editMode: EditMode = .inactive
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -61,7 +62,7 @@ struct DeckDetailView: View {
                     }
 
                     // Bulk delete bar
-                    if viewModel.isSelectMode {
+                    if editMode == .active {
                         HStack {
                             Button(viewModel.selectedWordIds.count == viewModel.filteredWords.count ? L("deck_detail_deselect_all") : L("deck_detail_select_all")) {
                                 if viewModel.selectedWordIds.count == viewModel.filteredWords.count {
@@ -73,7 +74,10 @@ struct DeckDetailView: View {
                             Spacer()
                             if !viewModel.selectedWordIds.isEmpty {
                                 Button(LF("deck_detail_delete_words", viewModel.selectedWordIds.count)) {
-                                    Task { await viewModel.deleteBulk() }
+                                    Task {
+                                        await viewModel.deleteBulk()
+                                        withAnimation { editMode = .inactive }
+                                    }
                                 }
                                 .foregroundStyle(.red)
                                 .fontWeight(.semibold)
@@ -84,30 +88,20 @@ struct DeckDetailView: View {
                         .background(Color(.systemGray6))
                     }
 
-                    // Word list
-                    List {
+                    // Word list — native two-finger multi-select
+                    List(selection: $viewModel.selectedWordIds) {
                         ForEach(viewModel.filteredWords) { word in
-                            if viewModel.isSelectMode {
-                                HStack {
-                                    Image(systemName: viewModel.selectedWordIds.contains(word.id) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(viewModel.selectedWordIds.contains(word.id) ? Color.accentColor : .secondary)
-                                    WordRowView(word: word)
-                                }
+                            WordRowView(word: word, targetLang: appState.activeEnvironment?.targetLang ?? "en")
                                 .contentShape(Rectangle())
                                 .onTapGesture {
-                                    viewModel.toggleSelection(id: word.id)
-                                    HapticsManager.selection()
-                                }
-                            } else {
-                                WordRowView(word: word)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
+                                    if editMode == .inactive {
                                         viewModel.editingWord = word
                                     }
-                            }
+                                }
                         }
                     }
                     .listStyle(.plain)
+                    .environment(\.editMode, $editMode)
                 }
             }
         }
@@ -130,14 +124,18 @@ struct DeckDetailView: View {
                     // More menu (select, export)
                     Menu {
                         Button {
-                            viewModel.isSelectMode.toggle()
-                            if !viewModel.isSelectMode {
-                                viewModel.selectedWordIds.removeAll()
+                            withAnimation {
+                                if editMode == .active {
+                                    editMode = .inactive
+                                    viewModel.selectedWordIds.removeAll()
+                                } else {
+                                    editMode = .active
+                                }
                             }
                         } label: {
                             Label(
-                                viewModel.isSelectMode ? L("deck_detail_cancel_selection") : L("deck_detail_select_words"),
-                                systemImage: viewModel.isSelectMode ? "xmark.circle" : "checkmark.circle"
+                                editMode == .active ? L("deck_detail_cancel_selection") : L("deck_detail_select_words"),
+                                systemImage: editMode == .active ? "xmark.circle" : "checkmark.circle"
                             )
                         }
 
