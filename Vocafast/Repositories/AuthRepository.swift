@@ -1,5 +1,6 @@
 import Foundation
 import Supabase
+import AuthenticationServices
 
 final class AuthRepository {
     private let supabase = SupabaseManager.shared.client
@@ -44,5 +45,29 @@ final class AuthRepository {
         get async {
             try? await supabase.auth.session.user.id
         }
+    }
+
+    // MARK: - Apple Sign-In
+
+    func signInWithApple(idToken: String, fullName: String?) async throws {
+        try await supabase.auth.signInWithIdToken(
+            credentials: .init(provider: .apple, idToken: idToken)
+        )
+
+        // fullName is only provided on first sign-in (account creation)
+        if let fullName {
+            _ = try? await supabase.auth.update(
+                user: UserAttributes(data: ["display_name": .string(fullName)])
+            )
+        }
+    }
+
+    // MARK: - Google Sign-In (OAuth)
+
+    func signInWithGoogle() async throws {
+        try await supabase.auth.signInWithOAuth(
+            provider: .google,
+            redirectTo: URL(string: "vocafast://callback")
+        )
     }
 }

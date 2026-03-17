@@ -17,7 +17,7 @@ final class TrainingLauncherViewModel: ObservableObject {
     private let wordRepo = WordRepository()
     private let trainingRepo = TrainingRepository()
 
-    let sessionSizes = [5, 10, 15, 20]
+    let sessionSizes = [5, 10, 15, 20, 0]  // 0 = infinite (all words)
 
     init(deckId: UUID) {
         self.deckId = deckId
@@ -63,7 +63,7 @@ final class TrainingLauncherViewModel: ObservableObject {
             let words = try await SRSScheduler.buildTrainingQueue(
                 deckId: deckId,
                 scope: selectedScope,
-                sessionSize: sessionSize
+                sessionSize: sessionSize == 0 ? 999 : sessionSize
             )
 
             guard !words.isEmpty else {

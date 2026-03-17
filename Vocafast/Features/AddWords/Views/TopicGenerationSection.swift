@@ -7,71 +7,95 @@ struct TopicGenerationSection: View {
     var body: some View {
         VStack(spacing: 16) {
             if viewModel.extractedWords.isEmpty {
-                // Description
-                VStack(alignment: .leading, spacing: 4) {
+                // MARK: - Topic Input
+                VStack(alignment: .leading, spacing: 10) {
                     Text(L("topic_desc"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 16)
+                        .padding(.horizontal, 16)
 
-                // Custom topic input
-                HStack {
-                    TextField(L("topic_placeholder"), text: $viewModel.topicInput)
-                        .textFieldStyle(.roundedBorder)
+                    // Text field in a card
+                    TextField(L("topic_placeholder"), text: $viewModel.topicInput, axis: .vertical)
+                        .lineLimit(2...4)
+                        .font(.body)
+                        .padding(14)
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .padding(.horizontal, 16)
 
-                    Button(L("common_go")) {
+                    // Generate button
+                    Button {
                         let topic = viewModel.topicInput.trimmingCharacters(in: .whitespaces)
                         guard !topic.isEmpty else { return }
                         Task { await viewModel.generateTopic(topic) }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "sparkles")
+                            Text(L("topic_generate"))
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .foregroundStyle(.white)
+                        .background(
+                            viewModel.topicInput.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isLoading
+                                ? Color.gray : Color.accentColor
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                     .disabled(viewModel.topicInput.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isLoading)
+                    .padding(.horizontal, 16)
                 }
-                .padding(.horizontal, 16)
 
-                // Level selector
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L("topic_difficulty"))
-                        .font(.subheadline.weight(.semibold))
+                // MARK: - Level + Word Count Card
+                VStack(spacing: 14) {
+                    // Level selector — 5-column grid, no scrolling
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(L("topic_difficulty"))
+                            .font(.subheadline.weight(.semibold))
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: viewModel.levels.count), spacing: 0) {
                             ForEach(viewModel.levels, id: \.0) { id, name in
                                 Button {
                                     viewModel.selectedLevel = id
+                                    HapticsManager.selection()
                                 } label: {
                                     Text(name)
                                         .font(.caption)
-                                        .padding(.horizontal, 14)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
                                         .padding(.vertical, 8)
+                                        .frame(maxWidth: .infinity)
                                         .background(
-                                            Capsule()
-                                                .fill(viewModel.selectedLevel == id ? Color.accentColor : Color(UIColor.systemGray6))
+                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                .fill(viewModel.selectedLevel == id ? Color.accentColor : Color(.systemGray5))
                                         )
                                         .foregroundStyle(viewModel.selectedLevel == id ? .white : .primary)
                                 }
                             }
                         }
                     }
-                }
-                .padding(.horizontal, 16)
 
-                // Word count slider
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
+                    Divider()
+
+                    // Word count
+                    HStack(spacing: 12) {
                         Text(L("topic_word_count"))
                             .font(.subheadline.weight(.semibold))
-                        Spacer()
+                        Slider(value: $viewModel.topicWordCount, in: 5...50, step: 1)
+                            .tint(Color.accentColor)
                         Text("\(Int(viewModel.topicWordCount))")
-                            .fontWeight(.semibold)
+                            .font(.subheadline.bold())
                             .foregroundStyle(Color.accentColor)
+                            .frame(width: 28, alignment: .trailing)
                     }
-                    Slider(value: $viewModel.topicWordCount, in: 5...50, step: 1)
-                        .tint(Color.accentColor)
                 }
+                .padding(14)
+                .background(Color(.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .padding(.horizontal, 16)
 
-                // Quick topics grid
+                // MARK: - Quick Topics
                 VStack(alignment: .leading, spacing: 8) {
                     Text(L("topic_quick"))
                         .font(.subheadline.weight(.semibold))
@@ -82,7 +106,7 @@ struct TopicGenerationSection: View {
                             Button {
                                 Task { await viewModel.generateTopic(topic) }
                             } label: {
-                                HStack {
+                                HStack(spacing: 6) {
                                     Text(icon)
                                     Text(topic)
                                         .font(.subheadline)
@@ -90,8 +114,8 @@ struct TopicGenerationSection: View {
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
-                                .background(Color(UIColor.systemGray6))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .background(Color(.secondarySystemGroupedBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             }
                             .disabled(viewModel.isLoading)
                         }
@@ -99,7 +123,7 @@ struct TopicGenerationSection: View {
                     .padding(.horizontal, 16)
                 }
 
-                // Loading
+                // MARK: - Loading / Error
                 if viewModel.isLoading {
                     VStack(spacing: 12) {
                         ProgressView()
@@ -117,7 +141,7 @@ struct TopicGenerationSection: View {
                         .padding(.horizontal, 16)
                 }
             } else {
-                // Results
+                // MARK: - Results
                 WordReviewList(
                     words: $viewModel.extractedWords,
                     onToggle: viewModel.toggleWordSelection
@@ -129,7 +153,7 @@ struct TopicGenerationSection: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)
-                    .background(Color(UIColor.systemGray5))
+                    .background(Color(.systemGray5))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                     Button {

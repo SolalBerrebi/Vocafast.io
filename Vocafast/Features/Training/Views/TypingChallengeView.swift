@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TypingChallengeView: View {
     let card: TrainingCard
+    let targetLang: String
     let onAnswer: (String) -> Void
 
     @State private var typedAnswer = ""
@@ -11,11 +12,20 @@ struct TypingChallengeView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            // Word display
+            // Word display with pronunciation
             VStack(spacing: 8) {
-                Text(card.word.word)
-                    .font(.title.bold())
-                    .multilineTextAlignment(.center)
+                HStack(spacing: 10) {
+                    Text(card.word.word)
+                        .font(.title.bold())
+                        .multilineTextAlignment(.center)
+
+                    PronounceButton(
+                        text: card.word.word,
+                        language: targetLang,
+                        size: 36,
+                        iconSize: .body
+                    )
+                }
 
                 if let context = card.word.contextSentence, !context.isEmpty {
                     Text(context)
@@ -77,12 +87,14 @@ struct TypingChallengeView: View {
         }
         .onAppear {
             isFocused = true
+            SpeechService.shared.speak(card.word.word, language: targetLang)
         }
         .onChange(of: card.id) { _, _ in
             typedAnswer = ""
             showResult = false
             wasCorrect = false
             isFocused = true
+            SpeechService.shared.speak(card.word.word, language: targetLang)
         }
     }
 

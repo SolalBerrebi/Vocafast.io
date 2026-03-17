@@ -54,6 +54,8 @@ final class AppState: ObservableObject {
                 if let session {
                     currentUserId = session.user.id
                     await checkOnboardingAndLoad()
+                } else {
+                    authState = .unauthenticated
                 }
             case .signedOut:
                 currentUserId = nil

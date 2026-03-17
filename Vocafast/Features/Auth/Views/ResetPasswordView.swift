@@ -7,45 +7,70 @@ struct ResetPasswordView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                Spacer().frame(height: 60)
-
+            VStack(spacing: 0) {
                 Text(L("auth_set_new_password"))
-                    .font(.largeTitle.bold())
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .padding(.top, 40)
+                    .padding(.bottom, 24)
 
                 if showSuccess {
-                    VStack(spacing: 16) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(.green)
+                    VStack(spacing: 20) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.green.opacity(0.1))
+                                .frame(width: 80, height: 80)
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 36))
+                                .foregroundStyle(.green)
+                        }
 
-                        Text(L("auth_password_updated"))
-                            .font(.title2.bold())
+                        VStack(spacing: 8) {
+                            Text(L("auth_password_updated"))
+                                .font(.title2.bold())
 
-                        Text(L("auth_password_updated_desc"))
-                            .foregroundStyle(.secondary)
+                            Text(L("auth_password_updated_desc"))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                    .padding(.top, 40)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
                 } else {
+                    // Error
                     if let error = viewModel.errorMessage {
-                        Text(error)
-                            .font(.callout)
-                            .foregroundStyle(.white)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.red.opacity(0.9))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.subheadline)
+                            Text(error)
+                                .font(.callout)
+                        }
+                        .foregroundStyle(.white)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.red.opacity(0.85))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 16)
                     }
 
-                    VStack(spacing: 16) {
+                    // Password fields
+                    VStack(spacing: 0) {
                         SecureField(L("auth_new_password"), text: $viewModel.password)
                             .textContentType(.newPassword)
-                            .textFieldStyle(.roundedBorder)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 13)
+
+                        Divider()
+                            .padding(.leading, 14)
 
                         SecureField(L("auth_confirm_password"), text: $viewModel.confirmPassword)
                             .textContentType(.newPassword)
-                            .textFieldStyle(.roundedBorder)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 13)
                     }
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.horizontal, 24)
 
                     Button {
                         Task {
@@ -67,12 +92,15 @@ struct ResetPasswordView: View {
                         .frame(height: 50)
                         .foregroundStyle(.white)
                         .background(Color.accentColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                     .disabled(viewModel.isLoading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
                 }
             }
-            .padding(.horizontal, 24)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .background(Color(.systemGroupedBackground))
     }
 }

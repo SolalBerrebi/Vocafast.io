@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 @MainActor
 final class AuthViewModel: ObservableObject {
@@ -52,6 +53,68 @@ final class AuthViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
             HapticsManager.error()
+        }
+
+        isLoading = false
+    }
+
+    // MARK: - Apple Sign-In
+
+    func handleAppleSignIn(result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let identityTokenData = credential.identityToken,
+                  let idToken = String(data: identityTokenData, encoding: .utf8)
+            else {
+                errorMessage = "Invalid Apple credentials."
+                HapticsManager.error()
+                return
+            }
+
+            let fullName = credential.fullName.flatMap {
+                PersonNameComponentsFormatter.localizedString(from: $0, style: .default, options: [])
+            }?.trimmingCharacters(in: .whitespaces)
+
+            let cleanName = (fullName?.isEmpty == false) ? fullName : nil
+
+            Task {
+                isLoading = true
+                errorMessage = nil
+                do {
+                    try await authRepo.signInWithApple(idToken: idToken, fullName: cleanName)
+                } catch {
+                    errorMessage = error.localizedDescription
+                    HapticsManager.error()
+                }
+                isLoading = false
+            }
+
+        case .failure(let error):
+            // Don't show error for user cancellation
+            if (error as NSError).code != ASAuthorizationError.canceled.rawValue {
+                errorMessage = error.localizedDescription
+                HapticsManager.error()
+            }
+        }
+    }
+
+    // MARK: - Google Sign-In
+
+    func signInWithGoogle() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            try await authRepo.signInWithGoogle()
+        } catch {
+            let nsError = error as NSError
+            // Don't show error for user cancellation
+            if !(nsError.domain == ASWebAuthenticationSessionErrorDomain
+                && nsError.code == ASWebAuthenticationSessionError.canceledLogin.rawValue) {
+                errorMessage = error.localizedDescription
+                HapticsManager.error()
+            }
         }
 
         isLoading = false

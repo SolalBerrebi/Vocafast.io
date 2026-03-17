@@ -8,6 +8,8 @@ struct DecksView: View {
     @State private var showQuickTrain = false
     @State private var deletingDeckId: UUID?
     @State private var showDeleteDeck = false
+    @State private var addWordsDeckId: UUID?
+    @State private var showAddWords = false
 
     var body: some View {
         ZStack {
@@ -94,7 +96,19 @@ struct DecksView: View {
         }
         .navigationTitle(L("decks_title"))
         .navigationDestination(isPresented: $showNewDeck) {
-            NewDeckView()
+            NewDeckView { deckId in
+                addWordsDeckId = deckId
+                // Refresh deck list, then navigate to AddWordsView
+                Task {
+                    await viewModel.fetchDecks(environmentId: appState.activeEnvironmentId)
+                    showAddWords = true
+                }
+            }
+        }
+        .navigationDestination(isPresented: $showAddWords) {
+            if let deckId = addWordsDeckId {
+                AddWordsView(deckId: deckId)
+            }
         }
         .navigationDestination(for: UUID.self) { deckId in
             DeckDetailView(deckId: deckId)

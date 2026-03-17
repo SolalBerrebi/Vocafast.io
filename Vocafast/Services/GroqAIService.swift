@@ -36,6 +36,7 @@ final class GroqAIService: AIService {
         - Items can be single words OR multi-word expressions/phrases (e.g. "to get along", "faire la grasse matinée"). Extract natural expressions as-is.
         - "word" MUST be in \(targetName) (the language being learned)
         - "translation" MUST be in \(nativeName) (the user's native language)
+        - TRANSLATION QUALITY: Provide natural, idiomatic translations — not word-for-word literal translations. Use the equivalent native expression a fluent speaker would actually say. For example, translate "il pleut des cordes" as "it's raining cats and dogs", not "it's raining ropes".
         - If the text contains verb conjugations or irregular forms, preserve them
         - Deduplicate entries
         - Maximum 30 items
@@ -84,6 +85,7 @@ final class GroqAIService: AIService {
           - Words in \(nativeName) → put in "translation" field, translate to \(targetName) for "word".
           - Words in a third language → translate to both fields appropriately.
         - The "word" field MUST always end up in \(targetName). The "translation" field MUST always end up in \(nativeName).
+        - TRANSLATION QUALITY: Provide natural, idiomatic translations — not word-for-word literal translations. Use the equivalent native expression a fluent speaker would actually say.
         - Focus on PRACTICAL vocabulary a language learner would benefit from knowing.
 
         Return ONLY a valid JSON array with no other text, no markdown, no code fences. Each element must have "word" and "translation" fields\(contextFields).
@@ -133,6 +135,7 @@ final class GroqAIService: AIService {
 
         Additional rules:
         - Choose practical, commonly-used items
+        - TRANSLATION QUALITY: Provide natural, idiomatic translations — not word-for-word literal translations. Use the equivalent native expression a fluent speaker would actually say.
         - For regular verbs, use the infinitive form
         - For irregular verbs or conjugation topics, include the irregular/conjugated forms\(excludeClause)
 
@@ -237,19 +240,28 @@ final class GroqAIService: AIService {
         if trimmed.isEmpty { throw AIError.noResponse }
 
         // Strip code fences if present
-        let cleaned = trimmed
+        var cleaned = trimmed
             .replacingOccurrences(of: "```json", with: "")
             .replacingOccurrences(of: "```", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Extract just the JSON array if the AI returned extra text around it
+        if let firstBracket = cleaned.firstIndex(of: "["),
+           let lastBracket = cleaned.lastIndex(of: "]") {
+            cleaned = String(cleaned[firstBracket...lastBracket])
+        }
 
         guard let jsonData = cleaned.data(using: .utf8) else {
             throw AIError.parseError
         }
 
-        let pairs = try JSONDecoder().decode([ExtractedWord].self, from: jsonData)
-
-        return pairs
-            .filter { !$0.word.isEmpty && $0.word.count < 200 && !$0.translation.isEmpty }
+        do {
+            let pairs = try JSONDecoder().decode([ExtractedWord].self, from: jsonData)
+            return pairs
+                .filter { !$0.word.isEmpty && $0.word.count < 200 && !$0.translation.isEmpty }
+        } catch {
+            throw AIError.parseError
+        }
     }
 }
 

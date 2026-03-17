@@ -35,7 +35,7 @@ struct WordRowView: View {
     private var srsColor: Color {
         if word.repetitions == 0 {
             return .blue // New
-        } else if word.intervalDays >= 14 {
+        } else if word.intervalDays >= 7 {
             return .green // Mastered
         } else if word.easeFactor < 2.2 {
             return .orange // Struggling

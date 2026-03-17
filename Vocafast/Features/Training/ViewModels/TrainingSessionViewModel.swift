@@ -209,17 +209,4 @@ final class TrainingSessionViewModel: ObservableObject {
         return xpResult
     }
 
-    func quit() async {
-        // Mark session as finished even if quitting early
-        do {
-            try await trainingRepo.finishSession(
-                id: session.id,
-                correct: correct,
-                incorrect: incorrect + hard,
-                duration: durationSeconds,
-                avgTime: avgResponseTimeMs,
-                xp: 0
-            )
-        } catch {}
-    }
 }

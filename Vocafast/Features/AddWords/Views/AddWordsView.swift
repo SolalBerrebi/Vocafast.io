@@ -86,6 +86,14 @@ struct AddWordsView: View {
             if selectedMethod != nil && !viewModel.showSaveSuccess {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
+                        // Stop any active voice recording before navigating back
+                        let speech = SpeechService.shared
+                        if speech.isRecording {
+                            speech.stopRecording()
+                        }
+                        speech.transcript = ""
+                        speech.recordingError = nil
+
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedMethod = nil
                             viewModel.clearExtracted()

@@ -22,33 +22,33 @@ struct EditWordSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Word") {
-                    TextField("Word", text: $editWord)
+                Section(L("edit_word_section")) {
+                    TextField(L("edit_word_section"), text: $editWord)
                 }
 
-                Section("Translation") {
-                    TextField("Translation", text: $editTranslation)
+                Section(L("edit_translation_section")) {
+                    TextField(L("edit_translation_section"), text: $editTranslation)
                 }
 
-                Section("Context Sentence (optional)") {
-                    TextField("Context sentence", text: $editContext)
+                Section(L("edit_context_section")) {
+                    TextField(L("edit_context_placeholder"), text: $editContext)
                 }
 
                 Section {
-                    Button("Delete Word", role: .destructive) {
+                    Button(L("edit_delete_word"), role: .destructive) {
                         onDelete()
                         dismiss()
                     }
                 }
             }
-            .navigationTitle("Edit Word")
+            .navigationTitle(L("edit_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(L("common_cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(L("common_save")) {
                         onSave(editWord, editTranslation, editContext.isEmpty ? nil : editContext)
                         dismiss()
                     }

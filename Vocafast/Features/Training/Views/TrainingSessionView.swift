@@ -19,22 +19,25 @@ struct TrainingSessionView: View {
 
     var body: some View {
         if viewModel.isFinished {
-            SessionSummaryView(
-                correct: viewModel.correct,
-                hard: viewModel.hard,
-                incorrect: viewModel.incorrect,
-                durationSeconds: viewModel.durationSeconds,
-                avgResponseTimeMs: viewModel.avgResponseTimeMs,
-                xpResult: xpResult,
-                previousLevel: LevelSystem.getLevelForXP(appState.totalXp - (xpResult?.totalXP ?? 0)),
-                currentLevel: LevelSystem.getLevelForXP(appState.totalXp)
-            ) {
-                dismiss()
-            }
-            .task {
-                if xpResult == nil {
-                    xpResult = await viewModel.finishSession(appState: appState)
+            if let xp = xpResult {
+                SessionSummaryView(
+                    correct: viewModel.correct,
+                    hard: viewModel.hard,
+                    incorrect: viewModel.incorrect,
+                    durationSeconds: viewModel.durationSeconds,
+                    avgResponseTimeMs: viewModel.avgResponseTimeMs,
+                    xpResult: xp,
+                    previousLevel: LevelSystem.getLevelForXP(appState.totalXp - xp.totalXP),
+                    currentLevel: LevelSystem.getLevelForXP(appState.totalXp)
+                ) {
+                    dismiss()
                 }
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .task {
+                        xpResult = await viewModel.finishSession(appState: appState)
+                    }
             }
         } else {
             VStack(spacing: 0) {
@@ -42,8 +45,9 @@ struct TrainingSessionView: View {
                 HStack {
                     Button(L("session_quit")) {
                         Task {
-                            await viewModel.quit()
-                            dismiss()
+                            // Finish session and show summary — isFinished triggers the summary view
+                            // which checks xpResult != nil, so no double-call risk
+                            viewModel.isFinished = true
                         }
                     }
                     .foregroundStyle(.red)
@@ -98,6 +102,7 @@ struct TrainingSessionView: View {
                     case .multiple_choice:
                         MultipleChoiceView(
                             card: card,
+                            targetLang: appState.activeEnvironment?.targetLang ?? "en",
                             onAnswer: { selected in
                                 Task { await viewModel.answerMultipleChoice(selected: selected) }
                             }
@@ -105,6 +110,7 @@ struct TrainingSessionView: View {
                     case .typing:
                         TypingChallengeView(
                             card: card,
+                            targetLang: appState.activeEnvironment?.targetLang ?? "en",
                             onAnswer: { typed in
                                 Task { await viewModel.answerTyping(typed: typed) }
                             }

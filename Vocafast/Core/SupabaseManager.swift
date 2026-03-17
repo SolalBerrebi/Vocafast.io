@@ -9,7 +9,13 @@ final class SupabaseManager {
     private init() {
         client = SupabaseClient(
             supabaseURL: Config.supabaseURL,
-            supabaseKey: Config.supabaseAnonKey
+            supabaseKey: Config.supabaseAnonKey,
+            options: .init(
+                auth: .init(
+                    redirectToURL: URL(string: "vocafast://callback"),
+                    emitLocalSessionAsInitialSession: true
+                )
+            )
         )
     }
 }

@@ -5,10 +5,8 @@ enum Config {
     static let supabaseURL = URL(string: "YOUR_SUPABASE_URL")!
     static let supabaseAnonKey = "YOUR_SUPABASE_ANON_KEY"
 
-    // MARK: - Groq AI
-    static let groqAPIKey = "YOUR_GROQ_API_KEY"
+    // MARK: - Groq AI (model only — API key is server-side in Edge Function)
     static let groqModel = "meta-llama/llama-4-scout-17b-16e-instruct"
-    static let groqBaseURL = "https://api.groq.com/openai/v1/chat/completions"
 
     // MARK: - Language Names
     static let languageNames: [String: String] = [

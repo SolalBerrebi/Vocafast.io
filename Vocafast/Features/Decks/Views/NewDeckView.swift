@@ -4,8 +4,8 @@ struct NewDeckView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var viewModel = NewDeckViewModel()
     @Environment(\.dismiss) private var dismiss
-    @State private var createdDeckId: UUID?
-    @State private var navigateToDetail = false
+
+    var onCreated: ((UUID) -> Void)?
 
     var body: some View {
         ScrollView {
@@ -102,8 +102,8 @@ struct NewDeckView: View {
                 Button {
                     Task {
                         if let deck = await viewModel.createDeck(environmentId: appState.activeEnvironmentId) {
-                            createdDeckId = deck.id
-                            navigateToDetail = true
+                            onCreated?(deck.id)
+                            dismiss()
                         }
                     }
                 } label: {
@@ -115,11 +115,6 @@ struct NewDeckView: View {
                     }
                 }
                 .disabled(viewModel.isLoading)
-            }
-        }
-        .navigationDestination(isPresented: $navigateToDetail) {
-            if let deckId = createdDeckId {
-                AddWordsView(deckId: deckId)
             }
         }
     }

@@ -54,7 +54,7 @@ struct ProgressStatsView: View {
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [Color.purple.opacity(0.2), Color.clear],
+                            colors: [LevelSystem.gradientColors(for: 1).top.opacity(0.25), Color.clear],
                             center: .center,
                             startRadius: 0,
                             endRadius: 80
@@ -153,6 +153,19 @@ struct ProgressStatsView: View {
 
     // MARK: - Level Hero Card
 
+    private var heroGradient: [Color] {
+        LevelSystem.blendedGradient(totalXp: appState.totalXp)
+    }
+
+    private var ringColors: [Color] {
+        let current = LevelSystem.gradientColors(for: currentLevel.level)
+        if let next = nextLevel {
+            let nextC = LevelSystem.gradientColors(for: next.level)
+            return [current.top.opacity(0.9), nextC.top.opacity(0.9), current.top.opacity(0.9)]
+        }
+        return [current.top.opacity(0.9), current.top.opacity(0.6), current.top.opacity(0.9)]
+    }
+
     private var levelHeroCard: some View {
         VStack(spacing: 16) {
             // Level ring + emoji
@@ -161,7 +174,7 @@ struct ProgressStatsView: View {
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [Color.purple.opacity(0.3), Color.clear],
+                            colors: [heroGradient.first?.opacity(0.4) ?? Color.purple.opacity(0.3), Color.clear],
                             center: .center,
                             startRadius: 30,
                             endRadius: 70
@@ -174,12 +187,12 @@ struct ProgressStatsView: View {
                     .stroke(Color.white.opacity(0.15), lineWidth: 8)
                     .frame(width: 100, height: 100)
 
-                // Progress ring
+                // Progress ring — colors match the gradient blend
                 Circle()
                     .trim(from: 0, to: animateIn ? xpProgress : 0)
                     .stroke(
                         AngularGradient(
-                            colors: [Color.cyan, Color.purple, Color.pink, Color.cyan],
+                            colors: ringColors,
                             center: .center
                         ),
                         style: StrokeStyle(lineWidth: 8, lineCap: .round)
@@ -226,7 +239,7 @@ struct ProgressStatsView: View {
                         RoundedRectangle(cornerRadius: 4)
                             .fill(
                                 LinearGradient(
-                                    colors: [.cyan, .purple],
+                                    colors: [heroGradient.first ?? .cyan, heroGradient.last ?? .purple],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -249,16 +262,12 @@ struct ProgressStatsView: View {
             RoundedRectangle(cornerRadius: 24)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.15, green: 0.1, blue: 0.35),
-                            Color(red: 0.25, green: 0.1, blue: 0.45),
-                            Color(red: 0.2, green: 0.05, blue: 0.3),
-                        ],
+                        colors: heroGradient,
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .shadow(color: Color.purple.opacity(0.3), radius: 20, y: 10)
+                .shadow(color: (heroGradient.first ?? .purple).opacity(0.3), radius: 20, y: 10)
         )
         .padding(.horizontal, 16)
     }

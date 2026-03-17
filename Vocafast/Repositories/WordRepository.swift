@@ -125,7 +125,7 @@ final class WordRepository {
         let total = rows.count
         let newCount = rows.filter { $0.repetitions == 0 }.count
         let due = rows.filter { $0.repetitions > 0 && $0.nextReviewAt <= now }.count
-        let mastered = rows.filter { $0.intervalDays >= 14 }.count
+        let mastered = rows.filter { $0.intervalDays >= 7 }.count
         let learning = total - newCount - mastered
 
         return DeckStats(total: total, due: due, newCount: newCount, learning: learning, mastered: mastered)
@@ -137,7 +137,7 @@ final class WordRepository {
             .from("words")
             .select("id")
             .in("deck_id", values: deckIds.map(\.uuidString))
-            .gte("interval_days", value: 14)
+            .gte("interval_days", value: 7)
             .execute()
             .value
         return rows.count

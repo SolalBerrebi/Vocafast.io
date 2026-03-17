@@ -1,10 +1,16 @@
 import Foundation
 
 enum StudyScope: String, CaseIterable {
-    case smart = "Smart Review"
-    case all = "All Words"
-    case mistakes = "Difficult Words"
-    case newOnly = "New Only"
+    case smart, all, mistakes, newOnly
+
+    var localizedName: String {
+        switch self {
+        case .smart: return L("scope_smart")
+        case .all: return L("scope_all")
+        case .mistakes: return L("scope_mistakes")
+        case .newOnly: return L("scope_new_only")
+        }
+    }
 }
 
 enum CardFrontSide: String, CaseIterable {

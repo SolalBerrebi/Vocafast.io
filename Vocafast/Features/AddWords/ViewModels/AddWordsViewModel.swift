@@ -51,19 +51,25 @@ final class AddWordsViewModel: ObservableObject {
         return "\(count) word\(count == 1 ? "" : "s") already in this deck"
     }
 
-    let quickTopics = [
-        ("Greetings", "👋"), ("Food", "🍕"), ("Travel", "✈️"), ("Technology", "💻"),
-        ("Work", "💼"), ("Health", "🏥"), ("Home", "🏠"), ("Nature", "🌿"),
-        ("Shopping", "🛍️"), ("Time", "⏰"),
-    ]
+    var quickTopics: [(String, String)] {
+        [
+            (L("topic_q_greetings"), "👋"), (L("topic_q_food"), "🍕"),
+            (L("topic_q_travel"), "✈️"), (L("topic_q_technology"), "💻"),
+            (L("topic_q_work"), "💼"), (L("topic_q_health"), "🏥"),
+            (L("topic_q_home"), "🏠"), (L("topic_q_nature"), "🌿"),
+            (L("topic_q_shopping"), "🛍️"), (L("topic_q_time"), "⏰"),
+        ]
+    }
 
-    let levels = [
-        ("starter", "Starter"),
-        ("beginner", "Beginner"),
-        ("intermediate", "Intermediate"),
-        ("advanced", "Advanced"),
-        ("native", "Native"),
-    ]
+    var levels: [(String, String)] {
+        [
+            ("starter", L("topic_lvl_starter")),
+            ("beginner", L("topic_lvl_beginner")),
+            ("intermediate", L("topic_lvl_intermediate")),
+            ("advanced", L("topic_lvl_advanced")),
+            ("native", L("topic_lvl_native")),
+        ]
+    }
 
     init(deckId: UUID) {
         self.deckId = deckId

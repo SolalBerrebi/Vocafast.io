@@ -76,7 +76,7 @@ final class SpeechService: ObservableObject {
 
         recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
             Task { @MainActor in
-                guard let self else { return }
+                guard let self, self.recognitionTask != nil else { return }
 
                 if let result {
                     self.transcript = result.bestTranscription.formattedString
@@ -132,9 +132,10 @@ final class SpeechService: ObservableObject {
     private func finishRecognition() {
         isProcessing = false
         isRecording = false
-        recognitionTask?.cancel()
+        let task = recognitionTask
         recognitionTask = nil
         recognitionRequest = nil
+        task?.cancel()
     }
 
     private func cleanup() {

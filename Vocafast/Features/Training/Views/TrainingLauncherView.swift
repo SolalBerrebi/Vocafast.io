@@ -14,47 +14,38 @@ struct TrainingLauncherView: View {
         _viewModel = StateObject(wrappedValue: TrainingLauncherViewModel(deckId: deckId))
     }
 
+    private var targetFlag: String {
+        Config.languageFlag(for: appState.activeEnvironment?.targetLang ?? "en")
+    }
+
+    private var nativeFlag: String {
+        Config.languageFlag(for: appState.nativeLang)
+    }
+
+    private var targetName: String {
+        Config.languageName(for: appState.activeEnvironment?.targetLang ?? "en")
+    }
+
+    private var nativeName: String {
+        Config.languageName(for: appState.nativeLang)
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                if viewModel.isLoading && viewModel.stats == nil {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: 200)
-                } else if let stats = viewModel.stats {
-                    // Stats cards
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        StatCard(title: L("training_due"), value: "\(stats.due)", color: .orange)
-                        StatCard(title: L("training_new"), value: "\(stats.newCount)", color: .blue)
-                        StatCard(title: L("training_learning"), value: "\(stats.learning)", color: .yellow)
-                        StatCard(title: L("training_mastered"), value: "\(stats.mastered)", color: .green)
-                    }
+        VStack(spacing: 0) {
+            if viewModel.isLoading && viewModel.stats == nil {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let stats = viewModel.stats {
+                VStack(spacing: 18) {
+                    // MARK: - Stats Bar (iPhone Storage style)
+                    StatsBarView(stats: stats)
+                        .padding(.horizontal, 16)
 
-                    // Study scope
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(L("training_study_scope"))
-                            .font(.headline)
-
-                        ForEach(StudyScope.allCases, id: \.self) { scope in
-                            Button {
-                                viewModel.selectedScope = scope
-                                HapticsManager.selection()
-                            } label: {
-                                HStack {
-                                    Image(systemName: viewModel.selectedScope == scope ? "largecircle.fill.circle" : "circle")
-                                        .foregroundStyle(viewModel.selectedScope == scope ? Color.accentColor : .secondary)
-                                    Text(scope.rawValue)
-                                        .foregroundStyle(.primary)
-                                    Spacer()
-                                }
-                                .padding(.vertical, 8)
-                            }
-                        }
-                    }
-
-                    // Training mode
+                    // MARK: - Training Mode
                     VStack(alignment: .leading, spacing: 8) {
                         Text(L("training_mode"))
-                            .font(.headline)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
 
                         HStack(spacing: 8) {
                             ModeButton(title: L("training_flashcards"), icon: "rectangle.stack", isSelected: viewModel.selectedMode == .flashcard) {
@@ -68,26 +59,100 @@ struct TrainingLauncherView: View {
                             }
                         }
                     }
+                    .padding(.horizontal, 16)
 
-                    // Card front side (flashcards only)
+                    // MARK: - Card Front Side (with flags)
                     if viewModel.selectedMode == .flashcard {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(L("training_card_front"))
-                                .font(.headline)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.secondary)
 
-                            Picker(L("training_front_side"), selection: $viewModel.frontSide) {
-                                ForEach(CardFrontSide.allCases, id: \.self) { side in
-                                    Text(side.rawValue).tag(side)
+                            HStack(spacing: 8) {
+                                Button {
+                                    viewModel.frontSide = .word
+                                    HapticsManager.selection()
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Text(targetFlag)
+                                            .font(.title3)
+                                        Text(targetName)
+                                            .font(.subheadline.weight(.medium))
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(viewModel.frontSide == .word ? Color.accentColor.opacity(0.15) : Color(.systemGray6))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(viewModel.frontSide == .word ? Color.accentColor : .clear, lineWidth: 2)
+                                    )
+                                    .foregroundStyle(viewModel.frontSide == .word ? Color.accentColor : .primary)
+                                }
+
+                                Button {
+                                    viewModel.frontSide = .translation
+                                    HapticsManager.selection()
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Text(nativeFlag)
+                                            .font(.title3)
+                                        Text(nativeName)
+                                            .font(.subheadline.weight(.medium))
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(viewModel.frontSide == .translation ? Color.accentColor.opacity(0.15) : Color(.systemGray6))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(viewModel.frontSide == .translation ? Color.accentColor : .clear, lineWidth: 2)
+                                    )
+                                    .foregroundStyle(viewModel.frontSide == .translation ? Color.accentColor : .primary)
                                 }
                             }
-                            .pickerStyle(.segmented)
                         }
+                        .padding(.horizontal, 16)
                     }
 
-                    // Session size
+                    // MARK: - Study Scope (compact pills)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(L("training_study_scope"))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: StudyScope.allCases.count), spacing: 0) {
+                            ForEach(StudyScope.allCases, id: \.self) { scope in
+                                Button {
+                                    viewModel.selectedScope = scope
+                                    HapticsManager.selection()
+                                } label: {
+                                    Text(scope.localizedName)
+                                        .font(.caption)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
+                                        .padding(.vertical, 8)
+                                        .frame(maxWidth: .infinity)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                .fill(viewModel.selectedScope == scope ? Color.accentColor : Color(.systemGray6))
+                                        )
+                                        .foregroundStyle(viewModel.selectedScope == scope ? .white : .primary)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+
+                    // MARK: - Session Size
                     VStack(alignment: .leading, spacing: 8) {
                         Text(L("training_session_size"))
-                            .font(.headline)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
 
                         HStack(spacing: 8) {
                             ForEach(viewModel.sessionSizes, id: \.self) { size in
@@ -95,12 +160,12 @@ struct TrainingLauncherView: View {
                                     viewModel.sessionSize = size
                                     HapticsManager.selection()
                                 } label: {
-                                    Text("\(size)")
+                                    Text(size == 0 ? "∞" : "\(size)")
                                         .font(.subheadline.weight(.semibold))
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 10)
                                         .background(
-                                            RoundedRectangle(cornerRadius: 10)
+                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
                                                 .fill(viewModel.sessionSize == size ? Color.accentColor : Color(.systemGray6))
                                         )
                                         .foregroundStyle(viewModel.sessionSize == size ? .white : .primary)
@@ -108,14 +173,18 @@ struct TrainingLauncherView: View {
                             }
                         }
                     }
+                    .padding(.horizontal, 16)
 
                     if let error = viewModel.errorMessage {
                         Text(error)
                             .font(.callout)
                             .foregroundStyle(.red)
+                            .padding(.horizontal, 16)
                     }
 
-                    // Start button
+                    Spacer(minLength: 0)
+
+                    // MARK: - Start Button
                     Button {
                         Task {
                             if let data = await viewModel.startSession(environmentId: appState.activeEnvironmentId) {
@@ -128,7 +197,10 @@ struct TrainingLauncherView: View {
                             if viewModel.isLoading {
                                 ProgressView().tint(.white)
                             } else {
-                                Text(L("training_start"))
+                                HStack(spacing: 8) {
+                                    Image(systemName: "play.fill")
+                                    Text(L("training_start"))
+                                }
                             }
                         }
                         .font(.headline)
@@ -136,13 +208,14 @@ struct TrainingLauncherView: View {
                         .frame(height: 54)
                         .foregroundStyle(.white)
                         .background(stats.total > 0 ? Color.accentColor : Color.gray)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
                     .disabled(viewModel.isLoading || stats.total == 0)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
                 }
+                .padding(.top, 16)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
         }
         .navigationTitle(L("training_title"))
         .fullScreenCover(isPresented: $showTrainingSession, onDismiss: {
@@ -164,28 +237,81 @@ struct TrainingLauncherView: View {
     }
 }
 
-private struct StatCard: View {
-    let title: String
-    let value: String
-    let color: Color
+// MARK: - Stats Bar (iPhone Storage style)
+
+private struct StatsBarView: View {
+    let stats: WordRepository.DeckStats
+
+    private var total: CGFloat {
+        CGFloat(max(stats.total, 1))
+    }
 
     var body: some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.title2.bold())
-                .foregroundStyle(color)
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        VStack(spacing: 10) {
+            // Stacked bar
+            GeometryReader { geo in
+                let w = geo.size.width
+                HStack(spacing: 1.5) {
+                    if stats.due > 0 {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.orange)
+                            .frame(width: max(6, w * CGFloat(stats.due) / total))
+                    }
+                    if stats.newCount > 0 {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.blue)
+                            .frame(width: max(6, w * CGFloat(stats.newCount) / total))
+                    }
+                    if stats.learning > 0 {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.yellow)
+                            .frame(width: max(6, w * CGFloat(stats.learning) / total))
+                    }
+                    if stats.mastered > 0 {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.green)
+                            .frame(width: max(6, w * CGFloat(stats.mastered) / total))
+                    }
+                }
+            }
+            .frame(height: 10)
+            .clipShape(Capsule())
+            .background(Capsule().fill(Color(UIColor.systemGray5)))
+
+            // Legend
+            HStack(spacing: 16) {
+                StatLegend(color: .orange, label: L("training_due"), value: stats.due)
+                StatLegend(color: .blue, label: L("training_new"), value: stats.newCount)
+                StatLegend(color: .yellow, label: L("training_learning"), value: stats.learning)
+                StatLegend(color: .green, label: L("training_mastered"), value: stats.mastered)
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
-        )
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
+
+private struct StatLegend: View {
+    let color: Color
+    let label: String
+    let value: Int
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 8, height: 8)
+            Text("\(value)")
+                .font(.caption.bold())
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+// MARK: - Mode Button
 
 private struct ModeButton: View {
     let title: String
@@ -205,11 +331,11 @@ private struct ModeButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(isSelected ? Color.accentColor.opacity(0.15) : Color(.systemGray6))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
             )
             .foregroundStyle(isSelected ? Color.accentColor : .primary)

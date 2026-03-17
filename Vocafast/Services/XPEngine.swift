@@ -22,8 +22,9 @@ enum XPEngine {
             streakMultiplier = 1.1
         }
 
-        // Flat completion bonus
-        let completionBonus = 20
+        // Flat completion bonus (only if at least 1 card answered)
+        let totalAnswered = correct + hard + incorrect
+        let completionBonus = totalAnswered > 0 ? 20 : 0
 
         let totalXP = Int(round(Double(baseXP + speedBonus + completionBonus) * streakMultiplier))
 

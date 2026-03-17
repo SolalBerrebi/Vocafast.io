@@ -20,7 +20,7 @@ struct VoiceCaptureSection: View {
                     .padding(.horizontal, 16)
 
                 // Microphone button
-                if !speech.isProcessing && speech.transcript.isEmpty {
+                if !speech.isProcessing && (speech.transcript.isEmpty || speech.isRecording) {
                     VStack(spacing: 16) {
                         Button {
                             if speech.isRecording {
