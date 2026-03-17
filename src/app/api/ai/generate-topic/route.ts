@@ -97,6 +97,7 @@ LANGUAGE DETECTION — be smart about which field goes where:
 
 Additional rules:
 - Choose practical, commonly-used items
+- TRANSLATION QUALITY: Provide natural, idiomatic translations — not word-for-word literal translations. Use the equivalent native expression a fluent speaker would actually say.
 - Items should be appropriate for a language learner (not too obscure)
 - For regular verbs, use the infinitive form (e.g. "to go", "aller", "ללכת")
 - For irregular verbs or conjugation topics, include the irregular/conjugated forms in the "word" field${excludeClause}

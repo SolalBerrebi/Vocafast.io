@@ -8,6 +8,7 @@ import {
   Sheet,
   Radio,
 } from "konsta/react";
+import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useEnvironment } from "@/hooks/useEnvironment";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
@@ -67,6 +68,7 @@ function Toggle({
 
 export default function SettingsPage() {
   const router = useRouter();
+  const supabase = createClient();
   const { user, signOut, updatePassword } = useAuth();
   const { environments, createEnvironment, deleteEnvironment, switchEnvironment } = useEnvironment();
   const activeEnvironmentId = useEnvironmentStore((s) => s.activeEnvironmentId);
@@ -95,6 +97,11 @@ export default function SettingsPage() {
   const [pwSuccess, setPwSuccess] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
 
+  // Delete account state
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
   // Goal sheet state
   const [goalSheetOpen, setGoalSheetOpen] = useState(false);
   const [tempGoalWords, setTempGoalWords] = useState(prefs.daily_goal_words);
@@ -103,6 +110,18 @@ export default function SettingsPage() {
   const handleSignOut = async () => {
     await signOut();
     router.push("/login");
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText.toLowerCase() !== "delete") return;
+    setDeletingAccount(true);
+    try {
+      await supabase.rpc("delete_own_account");
+      await signOut();
+      router.push("/login");
+    } catch {
+      setDeletingAccount(false);
+    }
   };
 
   const existingCodes = new Set(environments.map((e) => e.target_lang));
@@ -561,6 +580,14 @@ export default function SettingsPage() {
         >
           Sign Out
         </button>
+
+        {/* Delete account */}
+        <button
+          onClick={() => setDeleteAccountOpen(true)}
+          className="w-full py-3.5 rounded-xl text-red-400 font-medium text-[14px] mt-2"
+        >
+          Delete Account
+        </button>
       </div>
 
       {/* Add Language Sheet */}
@@ -752,6 +779,46 @@ export default function SettingsPage() {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      </Sheet>
+
+      {/* Delete Account Sheet */}
+      <Sheet
+        opened={deleteAccountOpen}
+        onBackdropClick={() => { setDeleteAccountOpen(false); setDeleteConfirmText(""); }}
+        className="!z-[99999]"
+      >
+        <div className="px-5 py-6 space-y-4">
+          <p className="text-[17px] font-semibold text-center">Delete Account</p>
+          <p className="text-[14px] text-gray-500 text-center">
+            This will permanently delete your account and all associated data including vocabulary, decks, training history, and progress.
+          </p>
+          <input
+            type="text"
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder="Type DELETE to confirm"
+            className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[16px] text-center focus:outline-none focus:border-red-400 transition-colors"
+          />
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setDeleteAccountOpen(false); setDeleteConfirmText(""); }}
+              className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-medium text-[15px]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deletingAccount || deleteConfirmText.toLowerCase() !== "delete"}
+              className={`flex-1 py-3 rounded-xl font-semibold text-[15px] transition-all ${
+                deleteConfirmText.toLowerCase() === "delete"
+                  ? "bg-red-500 text-white active:scale-[0.98]"
+                  : "bg-gray-200 text-gray-400"
+              }`}
+            >
+              {deletingAccount ? "Deleting..." : "Delete My Account"}
+            </button>
           </div>
         </div>
       </Sheet>

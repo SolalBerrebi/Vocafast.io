@@ -95,6 +95,17 @@ export default function DeckDetailPage() {
     setSelectedIds(new Set());
   };
 
+  const [showDeleteDeck, setShowDeleteDeck] = useState(false);
+  const [deletingDeck, setDeletingDeck] = useState(false);
+
+  const handleDeleteDeck = async () => {
+    setDeletingDeck(true);
+    await supabase.from("decks").delete().eq("id", deckId);
+    setDeletingDeck(false);
+    setShowDeleteDeck(false);
+    router.replace("/decks");
+  };
+
   const openEdit = (word: Word) => {
     setEditWord(word);
     setEditWordValue(word.word);
@@ -438,6 +449,47 @@ export default function DeckDetailPage() {
           )}
         </div>
       )}
+
+      {/* Delete Deck */}
+      {!selectMode && words.length >= 0 && (
+        <div className="mt-6 mb-4 px-1">
+          <button
+            onClick={() => setShowDeleteDeck(true)}
+            className="w-full py-3 rounded-xl text-red-500 font-medium text-[15px] bg-red-50 active:scale-[0.98] transition-all"
+          >
+            Delete Deck
+          </button>
+        </div>
+      )}
+
+      {/* Delete Deck Confirmation */}
+      <Sheet
+        opened={showDeleteDeck}
+        onBackdropClick={() => setShowDeleteDeck(false)}
+        className="!z-[99999]"
+      >
+        <div className="px-5 py-6 text-center space-y-4">
+          <p className="text-[17px] font-semibold">Delete this deck?</p>
+          <p className="text-[14px] text-gray-500">
+            This will permanently delete the deck and all its words. This cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowDeleteDeck(false)}
+              className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-medium text-[15px]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteDeck}
+              disabled={deletingDeck}
+              className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold text-[15px] active:scale-[0.98] transition-all"
+            >
+              {deletingDeck ? "Deleting..." : "Delete"}
+            </button>
+          </div>
+        </div>
+      </Sheet>
 
       {/* Edit Word Sheet */}
       <Sheet

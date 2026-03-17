@@ -71,6 +71,7 @@ IMPORTANT RULES:
 - Items can be single words OR multi-word expressions/phrases (e.g. "to get along", "faire la grasse matinée"). Extract natural expressions as-is.
 - "word" MUST be in ${targetName} (the language being learned)
 - "translation" MUST be in ${nativeName} (the user's native language)
+- TRANSLATION QUALITY: Provide natural, idiomatic translations — not word-for-word literal translations. Use the equivalent native expression a fluent speaker would actually say.
 - If the text contains verb conjugations or irregular forms, preserve them (e.g. "go / went / gone" stays as-is in the "word" field)
 - Deduplicate entries
 - Maximum 30 items

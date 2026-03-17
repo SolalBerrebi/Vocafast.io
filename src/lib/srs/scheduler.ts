@@ -127,7 +127,7 @@ export async function getDeckStats(deckId: string): Promise<{
   const due = words.filter(
     (w) => w.repetitions > 0 && w.next_review_at && w.next_review_at <= now,
   ).length;
-  const mastered = words.filter((w) => w.interval_days >= 21).length;
+  const mastered = words.filter((w) => w.interval_days >= 7).length;
   const learning = total - newCount - mastered;
 
   return { total, due, newCount, learning, mastered };

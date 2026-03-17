@@ -29,8 +29,9 @@ export function calculateSessionXP(params: {
   else if (params.streakDays >= 4) streakMultiplier = 1.2;
   else if (params.streakDays >= 2) streakMultiplier = 1.1;
 
-  // Flat completion bonus
-  const completionBonus = 20;
+  // Flat completion bonus (only if at least 1 card answered)
+  const totalAnswered = params.correct + params.hard + params.incorrect;
+  const completionBonus = totalAnswered > 0 ? 20 : 0;
 
   const totalXP = Math.round(
     (baseXP + speedBonus + completionBonus) * streakMultiplier,

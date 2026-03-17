@@ -74,6 +74,7 @@ IMPORTANT RULES:
   - Words in a third language → translate to both fields appropriately.
   - Do NOT assume all text is in one language. Detect per-item.
 - The "word" field MUST always end up in ${targetName}. The "translation" field MUST always end up in ${nativeName}.
+- TRANSLATION QUALITY: Provide natural, idiomatic translations — not word-for-word literal translations. Use the equivalent native expression a fluent speaker would actually say.
 - If the image contains verb conjugations or irregular forms, preserve them (e.g. "go / went / gone").
 - Focus on PRACTICAL vocabulary a language learner would benefit from knowing.
 

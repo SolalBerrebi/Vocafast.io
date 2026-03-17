@@ -11,7 +11,7 @@ import type { StudyScope } from "@/lib/srs/scheduler";
 import type { CardFrontSide } from "@/stores/training-store";
 import type { Deck, TrainingMode, Word } from "@/types/database";
 
-const SESSION_SIZES = [5, 10, 15, 20];
+const SESSION_SIZES = [5, 10, 15, 20, 0]; // 0 = infinite (all words)
 
 const SCOPES: { key: StudyScope; label: string; desc: string; icon: string }[] = [
   { key: "smart", label: "Smart Review", desc: "Due + new words (SRS)", icon: "🧠" },
@@ -68,7 +68,7 @@ export default function TrainLauncherPage() {
     if (!activeEnvironmentId || stats.total === 0) return;
     setStarting(true);
 
-    const availableWords = await buildTrainingQueue(deckId, scope, sessionSize);
+    const availableWords = await buildTrainingQueue(deckId, scope, sessionSize === 0 ? 999 : sessionSize);
 
     if (availableWords.length === 0) {
       setStarting(false);
@@ -254,7 +254,7 @@ export default function TrainLauncherPage() {
                 : "bg-gray-100 text-gray-600 active:bg-gray-200"
             }`}
           >
-            {size}
+            {size === 0 ? "∞" : size}
           </button>
         ))}
       </div>
