@@ -1,7 +1,13 @@
 import SwiftUI
+import SwiftData
 
 struct DeckCardView: View {
     let deck: Deck
+    @Environment(\.modelContext) private var modelContext
+
+    private var isDownloaded: Bool {
+        OfflineDeckManager.shared.isDownloaded(deckId: deck.id, context: modelContext)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -18,9 +24,17 @@ struct DeckCardView: View {
                     .foregroundStyle(.primary)
                     .lineLimit(1)
 
-                Text("\(deck.wordCount) word\(deck.wordCount == 1 ? "" : "s")")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text("\(deck.wordCount) word\(deck.wordCount == 1 ? "" : "s")")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    if isDownloaded {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.green)
+                    }
+                }
             }
 
             Spacer()

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct TrainingLauncherView: View {
     let deckId: UUID
@@ -8,6 +9,7 @@ struct TrainingLauncherView: View {
     @State private var sessionData: (session: TrainingSession, cards: [TrainingCard])?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     init(deckId: UUID) {
         self.deckId = deckId
@@ -187,7 +189,7 @@ struct TrainingLauncherView: View {
                     // MARK: - Start Button
                     Button {
                         Task {
-                            if let data = await viewModel.startSession(environmentId: appState.activeEnvironmentId) {
+                            if let data = await viewModel.startSession(environmentId: appState.activeEnvironmentId, modelContext: modelContext) {
                                 sessionData = data
                                 showTrainingSession = true
                             }

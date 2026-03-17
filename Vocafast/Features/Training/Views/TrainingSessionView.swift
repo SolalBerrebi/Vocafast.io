@@ -1,9 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct TrainingSessionView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var viewModel: TrainingSessionViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @State private var timer: Timer?
     @State private var xpResult: SessionXPResult?
 
@@ -121,6 +123,7 @@ struct TrainingSessionView: View {
                 Spacer()
             }
             .onAppear {
+                viewModel.modelContext = modelContext
                 timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                     Task { @MainActor in
                         viewModel.elapsedSeconds += 1

@@ -121,6 +121,9 @@ struct DeckDetailView: View {
                 }
 
                 if !viewModel.words.isEmpty {
+                    // Download for offline
+                    OfflineDownloadButton(deckId: deckId, deck: viewModel.deck)
+
                     // More menu (select, export)
                     Menu {
                         Button {
@@ -268,4 +271,44 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Offline Download Button
+
+struct OfflineDownloadButton: View {
+    let deckId: UUID
+    let deck: Deck?
+    @Environment(\.modelContext) private var modelContext
+    @ObservedObject private var manager = OfflineDeckManager.shared
+
+    private var isDownloaded: Bool {
+        manager.isDownloaded(deckId: deckId, context: modelContext)
+    }
+
+    private var isDownloading: Bool {
+        manager.downloadingDeckIds.contains(deckId)
+    }
+
+    var body: some View {
+        Button {
+            guard let deck else { return }
+            if isDownloaded {
+                manager.removeDeck(deckId: deckId, context: modelContext)
+                HapticsManager.light()
+            } else {
+                Task {
+                    await manager.downloadDeck(deckId: deckId, deck: deck, context: modelContext)
+                    HapticsManager.success()
+                }
+            }
+        } label: {
+            if isDownloading {
+                ProgressView()
+            } else {
+                Image(systemName: isDownloaded ? "arrow.down.circle.fill" : "arrow.down.circle")
+                    .foregroundStyle(isDownloaded ? .green : .accentColor)
+            }
+        }
+        .disabled(isDownloading)
+    }
 }

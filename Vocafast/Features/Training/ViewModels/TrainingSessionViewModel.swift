@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @MainActor
 final class TrainingSessionViewModel: ObservableObject {
@@ -6,6 +7,7 @@ final class TrainingSessionViewModel: ObservableObject {
     let cards: [TrainingCard]
     let mode: TrainingMode
     let frontSide: CardFrontSide
+    var modelContext: ModelContext?
 
     @Published var currentIndex = 0
     @Published var correct = 0
@@ -104,6 +106,16 @@ final class TrainingSessionViewModel: ObservableObject {
                 wordId: wordId,
                 quality: quality,
                 wasCorrect: wasCorrect
+            )
+        }
+
+        // Also update local cache + queue pending review for offline sync
+        if let ctx = modelContext {
+            OfflineDeckManager.shared.updateCachedWord(id: wordId, srs: srs, context: ctx)
+            OfflineDeckManager.shared.savePendingReview(
+                sessionId: sessionId, wordId: wordId,
+                quality: quality, wasCorrect: wasCorrect,
+                srs: srs, context: ctx
             )
         }
     }

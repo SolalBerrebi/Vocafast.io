@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @MainActor
 final class TrainingLauncherViewModel: ObservableObject {
@@ -12,6 +13,7 @@ final class TrainingLauncherViewModel: ObservableObject {
     @Published var sessionSize: Int = 10
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var isOfflineSession = false
 
     private let deckRepo = DeckRepository()
     private let wordRepo = WordRepository()
@@ -45,7 +47,7 @@ final class TrainingLauncherViewModel: ObservableObject {
         isLoading = false
     }
 
-    func startSession(environmentId: UUID?) async -> (session: TrainingSession, cards: [TrainingCard])? {
+    func startSession(environmentId: UUID?, modelContext: ModelContext) async -> (session: TrainingSession, cards: [TrainingCard])? {
         guard let envId = environmentId else {
             errorMessage = "No active environment."
             return nil
@@ -57,52 +59,87 @@ final class TrainingLauncherViewModel: ObservableObject {
 
         isLoading = true
         errorMessage = nil
+        isOfflineSession = false
+
+        let effectiveSize = sessionSize == 0 ? 999 : sessionSize
+
+        // Try online first, fall back to offline cache
+        var words: [Word] = []
 
         do {
-            // Build queue
-            let words = try await SRSScheduler.buildTrainingQueue(
+            words = try await SRSScheduler.buildTrainingQueue(
                 deckId: deckId,
                 scope: selectedScope,
-                sessionSize: sessionSize == 0 ? 999 : sessionSize
+                sessionSize: effectiveSize
             )
-
-            guard !words.isEmpty else {
-                errorMessage = "No words match the selected scope."
+        } catch {
+            // Network failed — try offline cache
+            let offlineWords = OfflineDeckManager.shared.buildOfflineQueue(
+                deckId: deckId,
+                scope: selectedScope,
+                sessionSize: effectiveSize,
+                context: modelContext
+            )
+            if !offlineWords.isEmpty {
+                words = offlineWords
+                isOfflineSession = true
+            } else {
+                errorMessage = "No internet connection and this deck is not downloaded for offline use."
                 isLoading = false
                 return nil
             }
+        }
 
-            // Create session in DB
-            let session = try await trainingRepo.createSession(
+        guard !words.isEmpty else {
+            errorMessage = "No words match the selected scope."
+            isLoading = false
+            return nil
+        }
+
+        // Create session in DB (or generate a local ID if offline)
+        let session: TrainingSession
+        do {
+            session = try await trainingRepo.createSession(
                 environmentId: envId,
                 deckId: deckId,
                 mode: selectedMode
             )
-
-            // Build training cards
-            var cards: [TrainingCard] = []
-            for word in words {
-                if selectedMode == .multiple_choice {
-                    // Generate 3 wrong options from other words
-                    let otherTranslations = words
-                        .filter { $0.id != word.id }
-                        .map(\.translation)
-                        .shuffled()
-                        .prefix(3)
-                    var options = Array(otherTranslations) + [word.translation]
-                    options.shuffle()
-                    cards.append(TrainingCard(word: word, options: options))
-                } else {
-                    cards.append(TrainingCard(word: word))
-                }
-            }
-
-            isLoading = false
-            return (session, cards)
         } catch {
-            errorMessage = error.localizedDescription
-            isLoading = false
-            return nil
+            // Offline — create local session
+            session = TrainingSession(
+                id: UUID(),
+                environmentId: envId,
+                deckId: deckId,
+                mode: selectedMode,
+                correct: 0,
+                incorrect: 0,
+                startedAt: Date().iso8601String,
+                finishedAt: nil,
+                durationSeconds: 0,
+                avgResponseTimeMs: 0,
+                xpEarned: 0
+            )
+            isOfflineSession = true
         }
+
+        // Build training cards
+        var cards: [TrainingCard] = []
+        for word in words {
+            if selectedMode == .multiple_choice {
+                let otherTranslations = words
+                    .filter { $0.id != word.id }
+                    .map(\.translation)
+                    .shuffled()
+                    .prefix(3)
+                var options = Array(otherTranslations) + [word.translation]
+                options.shuffle()
+                cards.append(TrainingCard(word: word, options: options))
+            } else {
+                cards.append(TrainingCard(word: word))
+            }
+        }
+
+        isLoading = false
+        return (session, cards)
     }
 }

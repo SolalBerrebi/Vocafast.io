@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct DecksView: View {
     @EnvironmentObject var appState: AppState
@@ -10,6 +11,8 @@ struct DecksView: View {
     @State private var showDeleteDeck = false
     @State private var addWordsDeckId: UUID?
     @State private var showAddWords = false
+    @State private var showImportPicker = false
+    @State private var importBanner: String?
 
     var body: some View {
         ZStack {
@@ -59,13 +62,40 @@ struct DecksView: View {
                 }
             }
 
-            // FAB
+            // FAB Menu
             VStack {
+                // Import success banner
+                if let banner = importBanner {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text(banner)
+                            .font(.subheadline.weight(.medium))
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
                 Spacer()
                 HStack {
                     Spacer()
-                    Button {
-                        showNewDeck = true
+                    Menu {
+                        Button {
+                            showNewDeck = true
+                        } label: {
+                            Label(L("decks_new_deck"), systemImage: "plus.rectangle")
+                        }
+
+                        Button {
+                            showImportPicker = true
+                        } label: {
+                            Label(L("decks_import_file"), systemImage: "square.and.arrow.down")
+                        }
                     } label: {
                         Image(systemName: "plus")
                             .font(.title2.bold())
@@ -126,6 +156,23 @@ struct DecksView: View {
                 await viewModel.fetchDecks(environmentId: newValue)
             }
         }
+        .fileImporter(
+            isPresented: $showImportPicker,
+            allowedContentTypes: [.commaSeparatedText, .tabSeparatedText, .json, .plainText],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                guard url.startAccessingSecurityScopedResource() else { return }
+                defer { url.stopAccessingSecurityScopedResource() }
+                if let data = try? Data(contentsOf: url) {
+                    Task { await importDeck(data: data, fileName: url.lastPathComponent) }
+                }
+            case .failure:
+                break
+            }
+        }
         .confirmationDialog(
             L("decks_delete_title"),
             isPresented: $showDeleteDeck,
@@ -139,5 +186,70 @@ struct DecksView: View {
         } message: {
             Text(L("decks_delete_message"))
         }
+    }
+
+    // MARK: - Import Logic
+
+    private func importDeck(data: Data, fileName: String) async {
+        let content = String(data: data, encoding: .utf8) ?? ""
+        let meta = DeckImporter.parse(fileContent: content, fileName: fileName)
+
+        guard !meta.words.isEmpty else { return }
+
+        let deckRepo = DeckRepository()
+        let wordRepo = WordRepository()
+        let envRepo = EnvironmentRepository()
+
+        do {
+            // Resolve environment
+            let envId: UUID
+            if let targetLang = meta.targetLang, !targetLang.isEmpty,
+               let existing = appState.environments.first(where: { $0.targetLang == targetLang }) {
+                envId = existing.id
+            } else if let targetLang = meta.targetLang, !targetLang.isEmpty {
+                let flag = Config.languageFlag(for: targetLang)
+                let newEnv = try await envRepo.create(targetLang: targetLang, color: "#007AFF", icon: flag)
+                await appState.fetchEnvironments()
+                await appState.switchEnvironment(to: newEnv.id)
+                envId = newEnv.id
+            } else if let activeId = appState.activeEnvironmentId {
+                envId = activeId
+            } else {
+                return
+            }
+
+            let cappedWords = Array(meta.words.prefix(500))
+            let resolvedName = meta.deckName ?? fileName.replacingOccurrences(of: "\\.[^.]+$", with: "", options: .regularExpression)
+
+            let deck = try await deckRepo.create(
+                environmentId: envId,
+                name: resolvedName,
+                color: meta.color ?? "#5856D6",
+                icon: meta.icon ?? "📥"
+            )
+
+            _ = try await wordRepo.addBatch(
+                deckId: deck.id,
+                words: cappedWords.map { ($0.word, $0.translation, $0.context) },
+                sourceType: .manual
+            )
+
+            // Refresh list
+            await viewModel.fetchDecks(environmentId: appState.activeEnvironmentId)
+
+            // Show banner
+            let deckName = resolvedName
+            let count = cappedWords.count
+            withAnimation {
+                importBanner = "\(count) words imported into \(deckName)"
+            }
+            HapticsManager.success()
+
+            // Auto-dismiss banner after 3s
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            withAnimation {
+                importBanner = nil
+            }
+        } catch {}
     }
 }

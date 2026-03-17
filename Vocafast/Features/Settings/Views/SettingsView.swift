@@ -6,32 +6,24 @@ struct SettingsView: View {
 
     var body: some View {
         List {
-            // Account
-            Section(L("settings_account")) {
-                HStack {
-                    Text(L("settings_email"))
-                    Spacer()
-                    Text(viewModel.email)
-                        .foregroundStyle(.secondary)
-                }
-
-                Button(L("settings_change_email")) {
-                    viewModel.showChangeEmail = true
-                }
-
-                Button(L("settings_change_password")) {
-                    viewModel.showChangePassword = true
-                }
-            }
-
-            // Languages
+            // Languages (directly visible)
             LanguageManagementSection(viewModel: viewModel)
 
-            // Import & Export
+            // Import & Export (directly visible)
             ImportExportSection(viewModel: viewModel)
 
-            // Notifications
-            NotificationSettingsSection(viewModel: viewModel)
+            // Downloads (directly visible)
+            Section(L("settings_downloads")) {
+                NavigationLink {
+                    DownloadedDecksView()
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.down.circle")
+                            .foregroundStyle(Color.accentColor)
+                        Text(L("settings_manage_downloads"))
+                    }
+                }
+            }
 
             // Messages
             if let success = viewModel.successMessage {
@@ -48,43 +40,48 @@ struct SettingsView: View {
                 }
             }
 
-            // About
-            Section(L("settings_about")) {
-                Link(L("settings_privacy"), destination: URL(string: "https://vocafast-io.com/privacy")!)
-
-                NavigationLink(L("settings_ai_data")) {
-                    AIDataUsageView()
-                }
-            }
-
-            // Sign Out
+            // Account, Notifications, About
             Section {
-                Button(L("settings_sign_out"), role: .destructive) {
-                    Task { await viewModel.signOut() }
+                NavigationLink {
+                    AccountSubPage(viewModel: viewModel)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.circle.fill")
+                            .foregroundStyle(Color.accentColor)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L("settings_account"))
+                                .foregroundStyle(.primary)
+                            Text(viewModel.email)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
-            }
 
-            // Delete Account
-            Section {
-                Button(L("settings_delete_account"), role: .destructive) {
-                    viewModel.showDeleteAccount = true
+                NavigationLink {
+                    NotificationsSubPage(viewModel: viewModel)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "bell.fill")
+                            .foregroundStyle(.orange)
+                        Text(L("settings_notifications"))
+                    }
                 }
-            } footer: {
-                Text(L("settings_delete_account_footer"))
+
+                NavigationLink {
+                    AboutSubPage()
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundStyle(.secondary)
+                        Text(L("settings_about"))
+                    }
+                }
             }
         }
         .navigationTitle(L("settings_title"))
-        .sheet(isPresented: $viewModel.showChangeEmail) {
-            ChangeEmailSheet(viewModel: viewModel)
-        }
-        .sheet(isPresented: $viewModel.showChangePassword) {
-            ChangePasswordSheet(viewModel: viewModel)
-        }
         .sheet(isPresented: $viewModel.showAddLanguage) {
             AddLanguageSheet(viewModel: viewModel)
-        }
-        .sheet(isPresented: $viewModel.showDeleteAccount) {
-            DeleteAccountSheet(viewModel: viewModel)
         }
         .confirmationDialog(
             L("settings_delete_lang_title"),
@@ -100,6 +97,99 @@ struct SettingsView: View {
         .task {
             await viewModel.load()
         }
+    }
+}
+
+// MARK: - Account Sub-Page
+
+private struct AccountSubPage: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    var body: some View {
+        List {
+            Section {
+                HStack {
+                    Text(L("settings_email"))
+                    Spacer()
+                    Text(viewModel.email)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button(L("settings_change_email")) {
+                    viewModel.showChangeEmail = true
+                }
+
+                Button(L("settings_change_password")) {
+                    viewModel.showChangePassword = true
+                }
+            }
+
+            Section {
+                Button(L("settings_sign_out"), role: .destructive) {
+                    Task { await viewModel.signOut() }
+                }
+            }
+
+            Section {
+                Button(L("settings_delete_account"), role: .destructive) {
+                    viewModel.showDeleteAccount = true
+                }
+            } footer: {
+                Text(L("settings_delete_account_footer"))
+            }
+        }
+        .navigationTitle(L("settings_account"))
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $viewModel.showChangeEmail) {
+            ChangeEmailSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $viewModel.showChangePassword) {
+            ChangePasswordSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $viewModel.showDeleteAccount) {
+            DeleteAccountSheet(viewModel: viewModel)
+        }
+    }
+}
+
+// MARK: - Notifications Sub-Page
+
+private struct NotificationsSubPage: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    var body: some View {
+        List {
+            NotificationSettingsSection(viewModel: viewModel)
+        }
+        .navigationTitle(L("settings_notifications"))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - About Sub-Page
+
+private struct AboutSubPage: View {
+    var body: some View {
+        List {
+            Section {
+                Link(L("settings_privacy"), destination: URL(string: "https://vocafast-io.com/privacy")!)
+
+                NavigationLink(L("settings_ai_data")) {
+                    AIDataUsageView()
+                }
+            }
+
+            Section {
+                HStack {
+                    Text(L("settings_version"))
+                    Spacer()
+                    Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .navigationTitle(L("settings_about"))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
