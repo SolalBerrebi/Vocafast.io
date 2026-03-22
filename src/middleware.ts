@@ -14,6 +14,6 @@ export const config = {
      * - favicon.ico, icons, manifest
      * - api routes that don't need auth
      */
-    "/((?!_next/static|_next/image|favicon.ico|icons/|manifest\\.webmanifest|api/).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icons/|manifest\\.webmanifest|api/|privacy|terms).*)",
   ],
 };
