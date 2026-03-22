@@ -1,6 +1,6 @@
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="fixed inset-0 overflow-y-auto bg-white z-50">
       <div className="mx-auto max-w-2xl px-6 py-16">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Terms of Use
